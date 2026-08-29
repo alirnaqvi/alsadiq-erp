@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@theme {
+  /* Palette taken from the trust's own world: the black and deep green of
+     Azadari banners, brass of the alam, and the off-white of receipt paper. */
+  --color-ink-950: #0b1013;
+  --color-ink-900: #12181c;
+  --color-ink-800: #1c2529;
+  --color-ink-700: #2b373c;
+  --color-ink-500: #5c6a6b;
+  --color-ink-300: #9aa5a5;
+  --color-ink-200: #c9d0cd;
+  --color-ink-100: #e4e8e5;
+  --color-paper: #f2f4f2;
+  --color-sabz-900: #06342c;
+  --color-sabz-700: #0c4a3e;
+  --color-sabz-600: #135e4d;
+  --color-sabz-100: #dcebe4;
+  --color-brass-600: #9a7b3f;
+  --color-brass-100: #f2e9d6;
+  --color-alert-700: #a4262c;
+  --color-alert-100: #f8e3e3;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo,
+    Consolas, monospace;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
+}
+
+/* Money, receipt numbers and donor codes must line up in columns. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-ink-500);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-sabz-600);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+input[inputmode="numeric"],
+input[inputmode="tel"] {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Receipts print on an 80mm thermal roll. Everything else is hidden so the
+   printer only ever sees the receipt column. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  .receipt-strip {
+    box-shadow: none !important;
+    border: 0 !important;
+    width: 72mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+  @page {
+    size: 80mm auto;
+    margin: 3mm;
+  }
+}
