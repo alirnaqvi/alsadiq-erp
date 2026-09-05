@@ -1,7 +1,7 @@
 import { amountInWords, hijri, longDate, money, PAYMENT_LABELS, timeOnly } from "@/lib/format";
 
 export type ReceiptData = {
-  org: { name: string; tagline?: string; address?: string; phone?: string; footer?: string };
+  org: { name: string; tagline?: string; address?: string; phone?: string; footer?: string; logo?: string };
   receiptNo: string;
   receivedAt: Date | string;
   donorName: string;
@@ -53,6 +53,14 @@ export default function ReceiptStrip({ data }: { data: ReceiptData }) {
       )}
 
       <header className="text-center">
+        {data.org.logo && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={data.org.logo}
+            alt=""
+            className="mx-auto mb-2 h-14 w-14 object-contain print:h-12 print:w-12"
+          />
+        )}
         <h3 className="text-[15px] font-bold uppercase tracking-wide">{data.org.name}</h3>
         {data.org.tagline && <p className="text-[10px] text-ink-500">{data.org.tagline}</p>}
         {data.org.address && <p className="text-[10px] text-ink-500">{data.org.address}</p>}
