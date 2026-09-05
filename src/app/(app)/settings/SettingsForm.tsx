@@ -26,7 +26,29 @@ export default function SettingsForm({ settings }: { settings: Record<string, st
     address: settings.org_address ?? "",
     phone: settings.org_phone ?? "",
     footer: settings.receipt_footer ?? "",
+    logo: settings.org_logo ?? "",
   });
+  const [logoError, setLogoError] = useState<string | null>(null);
+
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoError(null);
+
+    if (!file.type.startsWith("image/")) {
+      setLogoError("Please choose an image file.");
+      return;
+    }
+    if (file.size > 300_000) {
+      setLogoError("That image is too large — please use a file under ~200KB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setOrg((prev) => ({ ...prev, logo: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  }
 
   return (
     <div className="space-y-6">
@@ -35,6 +57,26 @@ export default function SettingsForm({ settings }: { settings: Record<string, st
           <Card>
             <h2 className="mb-4 text-sm font-semibold text-ink-900">Trust details</h2>
             <div className="space-y-4">
+              <Field label="Logo" hint="Shown on printed and WhatsApp receipts. Square images work best, under ~200KB.">
+                <div className="flex items-center gap-4">
+                  {org.logo && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={org.logo}
+                      alt="Trust logo"
+                      className="h-16 w-16 rounded-md border border-ink-200 object-contain bg-white"
+                    />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    className="text-sm text-ink-700 file:mr-3 file:rounded-md file:border-0 file:bg-ink-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink-700 hover:file:bg-ink-200"
+                  />
+                </div>
+                <input type="hidden" name="org_logo" value={org.logo} />
+                {logoError && <p className="mt-1 text-sm text-alert-700">{logoError}</p>}
+              </Field>
               <Field label="Name" required>
                 <Input
                   name="org_name"

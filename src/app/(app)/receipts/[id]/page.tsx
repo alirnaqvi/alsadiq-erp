@@ -62,6 +62,7 @@ export default async function ReceiptPage({
     address: settings.org_address,
     phone: settings.org_phone,
     footer: settings.receipt_footer,
+    logo: settings.org_logo,
   };
 
   const receiptText = [

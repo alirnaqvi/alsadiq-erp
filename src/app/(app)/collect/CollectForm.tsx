@@ -33,7 +33,7 @@ export default function CollectForm({
   initialTerm = "",
 }: {
   heads: HeadOption[];
-  org: { name: string; tagline: string; address: string; phone: string; footer: string };
+  org: { name: string; tagline: string; address: string; phone: string; footer: string; logo?: string };
   collector: string;
   initialTerm?: string;
 }) {

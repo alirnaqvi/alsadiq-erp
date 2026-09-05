@@ -57,6 +57,7 @@ export default async function CollectPage({
           address: settings.org_address || "",
           phone: settings.org_phone || "",
           footer: settings.receipt_footer || "",
+          logo: settings.org_logo || "",
         }}
         collector={user.fullName}
         initialTerm={prefill ?? ""}
