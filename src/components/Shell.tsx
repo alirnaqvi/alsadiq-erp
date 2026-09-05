@@ -13,12 +13,16 @@ export default function Shell({
   hijriToday,
   children,
   onSignOut,
+  logo,
+  orgName,
 }: {
   items: NavItem[];
   user: { fullName: string; roleName: string; postedAt?: string | null };
   hijriToday: string;
   children: React.ReactNode;
   onSignOut: React.ReactNode;
+  logo?: string;
+  orgName?: string;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -66,7 +70,7 @@ export default function Shell({
     <div className="min-h-dvh lg:flex">
       {/* Mobile bar */}
       <header className="no-print flex items-center justify-between border-b border-ink-100 bg-ink-950 px-4 py-3 text-white lg:hidden">
-        <span className="text-sm font-semibold tracking-tight">Al Sadiq Trust</span>
+        <span className="text-sm font-semibold tracking-tight">{orgName || "Al Sadiq Trust"}</span>
         <button
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
@@ -87,8 +91,12 @@ export default function Shell({
         <div className="flex h-full flex-col justify-between px-4 py-6">
           <div>
             <div className="hidden px-3 lg:block">
+              {logo && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logo} alt="" className="mb-2 h-9 w-9 object-contain" />
+              )}
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brass-600">
-                Al Sadiq Trust
+                {orgName || "Al Sadiq Trust"}
               </p>
               <p className="tnum mt-1 text-xs text-ink-500">{hijriToday}</p>
             </div>
