@@ -57,8 +57,28 @@ export default function CollectForm({
   const [chequeNo, setChequeNo] = useState("");
   const [bankName, setBankName] = useState("");
   const [slipRef, setSlipRef] = useState("");
+  const [slipUrl, setSlipUrl] = useState("");
+  const [slipError, setSlipError] = useState<string | null>(null);
   const [remarks, setRemarks] = useState("");
   const [isMembership, setIsMembership] = useState(false);
+
+  function handleSlipChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSlipError(null);
+
+    if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+      setSlipError("Please choose an image or PDF file.");
+      return;
+    }
+    if (file.size > 3_000_000) {
+      setSlipError("That file is too large — please use a file under ~2MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setSlipUrl(reader.result as string);
+    reader.readAsDataURL(file);
+  }
 
   const formRef = useRef<HTMLFormElement>(null);
   const amountRef = useRef<HTMLInputElement>(null);
@@ -366,11 +386,31 @@ export default function CollectForm({
               </Field>
               {method !== "cash" && (
                 <Field
-                  label="Link to slip image"
-                  hint="Paste a link to the scanned slip if you have one."
+                  label="Slip image"
+                  hint="Upload a photo or scan of the slip if you have one (image or PDF, under ~2MB)."
                   className="sm:col-span-2"
                 >
-                  <Input name="slipUrl" type="url" placeholder="https://…" />
+                  <div className="flex items-center gap-3">
+                    {slipUrl && slipUrl.startsWith("data:image/") && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={slipUrl}
+                        alt="Slip preview"
+                        className="h-14 w-14 rounded-md border border-ink-200 object-cover"
+                      />
+                    )}
+                    {slipUrl && slipUrl.startsWith("data:application/pdf") && (
+                      <span className="text-sm text-ink-600">PDF attached</span>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={handleSlipChange}
+                      className="text-sm text-ink-700 file:mr-3 file:rounded-md file:border-0 file:bg-ink-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink-700 hover:file:bg-ink-200"
+                    />
+                  </div>
+                  <input type="hidden" name="slipUrl" value={slipUrl} />
+                  {slipError && <p className="mt-1 text-sm text-alert-700">{slipError}</p>}
                 </Field>
               )}
             </div>

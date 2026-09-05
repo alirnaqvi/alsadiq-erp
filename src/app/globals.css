@@ -77,8 +77,9 @@ input[inputmode="tel"] {
   }
 }
 
-/* Receipts print on an 80mm thermal roll. Everything else is hidden so the
-   printer only ever sees the receipt column. */
+/* Receipts print full-page for now (thermal printer count/rollout is not yet
+   confirmed with the trust). Once that's settled, reintroduce an 80mm mode -
+   e.g. a print-format toggle - rather than assuming one printer setup. */
 @media print {
   .no-print {
     display: none !important;
@@ -89,13 +90,13 @@ input[inputmode="tel"] {
   .receipt-strip {
     box-shadow: none !important;
     border: 0 !important;
-    width: 72mm !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    width: 320px !important;
+    margin: 0 auto !important;
     border-radius: 0 !important;
+    zoom: 2;
   }
   @page {
-    size: 80mm auto;
-    margin: 3mm;
+    size: auto;
+    margin: 16mm;
   }
 }

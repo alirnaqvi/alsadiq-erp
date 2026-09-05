@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { hijri } from "@/lib/format";
+import { getSettings } from "@/lib/queries";
 import Shell, { type NavItem } from "@/components/Shell";
 import { logout } from "@/app/login/actions";
 
@@ -19,6 +20,7 @@ const ALL_NAV: (NavItem & { permission?: string })[] = [
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+  const settings = await getSettings();
 
   const items = ALL_NAV.filter(
     (i) => !i.permission || user.permissions.includes(i.permission),
@@ -29,6 +31,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       items={items}
       user={{ fullName: user.fullName, roleName: user.roleName }}
       hijriToday={hijri(new Date())}
+      logo={settings.org_logo}
+      orgName={settings.org_name}
       onSignOut={
         <form action={logout}>
           <button
