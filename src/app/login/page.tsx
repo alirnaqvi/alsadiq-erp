@@ -11,8 +11,7 @@ export default async function LoginPage() {
 
   return (
     <main className="flex min-h-dvh flex-col lg:flex-row">
-      {/* Identity panel */}
-      <div className="relative flex flex-col justify-between bg-ink-950 px-8 py-10 text-white lg:w-[42%] lg:px-14 lg:py-14">
+      <div className="relative flex flex-col justify-between bg-ink-950 px-5 py-8 text-white sm:px-8 sm:py-10 lg:w-[42%] lg:px-14 lg:py-14">
         <div>
           {settings.org_logo && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -21,7 +20,7 @@ export default async function LoginPage() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brass-600">
             {settings.org_name || "Al Sadiq Trust"}
           </p>
-          <h1 className="mt-6 max-w-sm text-3xl font-semibold leading-tight tracking-tight lg:text-4xl">
+          <h1 className="mt-5 max-w-sm text-2xl font-semibold leading-tight tracking-tight sm:mt-6 sm:text-3xl lg:text-4xl">
             Collection &amp; receipting system
           </h1>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-ink-300">
@@ -43,7 +42,7 @@ export default async function LoginPage() {
       </div>
 
       {/* Form panel */}
-      <div className="flex flex-1 items-center justify-center px-6 py-12">
+      <div className="flex flex-1 items-center justify-center px-5 py-8 sm:px-6 sm:py-12">
         <div className="w-full max-w-sm">
           <h2 className="text-xl font-semibold tracking-tight text-ink-900">Sign in</h2>
           <p className="mt-1 text-sm text-ink-500">

@@ -483,7 +483,7 @@ export default function CollectForm({
       </form>
 
       {/* Live receipt preview — this is exactly what the printer will produce. */}
-      <aside className="no-print lg:sticky lg:top-10 lg:self-start">
+      <aside className="no-print max-w-[320px] lg:sticky lg:top-10 lg:self-start">
         <p className="eyebrow mb-2">Receipt preview</p>
         <ReceiptStrip
           data={{

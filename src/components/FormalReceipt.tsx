@@ -37,23 +37,23 @@ export default function FormalReceipt({ data }: { data: FormalReceiptData }) {
   return (
     <article className="formal-receipt mx-auto w-full max-w-[210mm] bg-white text-ink-900">
       <div className="border-2 border-ink-900">
-        <header className="flex items-start justify-between gap-4 border-b-2 border-ink-900 bg-[#0c4a3e] px-8 py-6 text-white">
-          <div className="flex items-start gap-4">
+        <header className="flex flex-col gap-4 border-b-2 border-ink-900 bg-[#0c4a3e] px-4 py-4 text-white sm:flex-row sm:items-start sm:justify-between sm:px-8 sm:py-6">
+          <div className="flex items-start gap-3 sm:gap-4">
             {data.org.logo && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={data.org.logo} alt="" className="h-16 w-16 rounded bg-white object-contain p-1" />
+              <img src={data.org.logo} alt="" className="h-12 w-12 rounded bg-white object-contain p-1 sm:h-16 sm:w-16" />
             )}
-            <div>
+            <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d4a017]">
                 Official donation receipt
               </p>
-              <h1 className="mt-1 text-2xl font-semibold tracking-tight">{data.org.name}</h1>
+              <h1 className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">{data.org.name}</h1>
               {data.org.tagline && <p className="mt-1 text-sm text-white/80">{data.org.tagline}</p>}
             </div>
           </div>
-          <div className="text-right">
+          <div className="sm:text-right">
             <p className="text-[11px] uppercase tracking-wider text-white/70">Receipt no.</p>
-            <p className="tnum mt-1 text-xl font-bold">{data.receiptNo}</p>
+            <p className="tnum mt-1 text-lg font-bold sm:text-xl">{data.receiptNo}</p>
           </div>
         </header>
 
@@ -70,7 +70,7 @@ export default function FormalReceipt({ data }: { data: FormalReceiptData }) {
           <Cell label="Collected by" value={data.collector} />
         </div>
 
-        <section className="px-8 py-5">
+        <section className="px-4 py-4 sm:px-8 sm:py-5">
           <p className="eyebrow">Received from</p>
           <p className="mt-1 text-lg font-semibold">{data.donorName}</p>
           {extras.length > 0 && (
@@ -85,7 +85,7 @@ export default function FormalReceipt({ data }: { data: FormalReceiptData }) {
           </p>
         </section>
 
-        <section className="mx-8 mb-6 overflow-hidden rounded-md border border-ink-200">
+        <section className="mx-4 mb-5 overflow-x-auto rounded-md border border-ink-200 sm:mx-8 sm:mb-6">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-ink-100 text-left text-[11px] uppercase tracking-wider text-ink-500">
@@ -111,8 +111,8 @@ export default function FormalReceipt({ data }: { data: FormalReceiptData }) {
           </table>
         </section>
 
-        <section className="mx-8 mb-6 rounded-md border border-ink-900 px-5 py-4">
-          <div className="flex items-end justify-between gap-4">
+        <section className="mx-4 mb-5 rounded-md border border-ink-900 px-4 py-4 sm:mx-8 sm:mb-6 sm:px-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
             <div>
               <p className="eyebrow">Amount in words</p>
               <p className="mt-1 text-sm font-medium">Rupees {amountInWords(data.amount)} only</p>
@@ -130,7 +130,7 @@ export default function FormalReceipt({ data }: { data: FormalReceiptData }) {
           {data.remarks && <p className="mt-3 text-sm text-ink-700">Note: {data.remarks}</p>}
         </section>
 
-        <footer className="border-t border-ink-200 px-8 py-5 text-xs leading-relaxed text-ink-500">
+        <footer className="border-t border-ink-200 px-4 py-4 text-xs leading-relaxed text-ink-500 sm:px-8 sm:py-5">
           {data.org.address && <p>{data.org.address}</p>}
           {data.org.phone && <p>Phone: {data.org.phone}</p>}
           {data.org.footer && <p className="mt-2">{data.org.footer}</p>}
@@ -145,7 +145,7 @@ export default function FormalReceipt({ data }: { data: FormalReceiptData }) {
 
 function Cell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-white px-8 py-3">
+    <div className="bg-white px-4 py-3 sm:px-8">
       <p className="eyebrow">{label}</p>
       <p className="mt-0.5 font-medium text-ink-900">{value}</p>
     </div>

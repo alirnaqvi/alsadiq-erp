@@ -20,7 +20,7 @@ export function Card({
     <section
       className={cx(
         "rounded-lg border border-ink-100 bg-white shadow-[0_1px_2px_rgba(11,16,19,0.04)]",
-        padded && "p-5",
+        padded && "p-4 sm:p-5",
         className,
       )}
     >
@@ -41,10 +41,10 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div>
+    <div className="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+      <div className="min-w-0">
         {eyebrow && <p className="eyebrow mb-1">{eyebrow}</p>}
-        <h1 className="text-2xl font-semibold tracking-tight text-ink-900">{title}</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-ink-900 sm:text-2xl">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-ink-500">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -186,8 +186,8 @@ export function Badge({
 
 export function Table({ children }: { children: React.ReactNode }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[560px] border-collapse text-sm">{children}</table>
+    <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
+      <table className="w-full min-w-[32rem] border-collapse text-sm sm:min-w-[560px]">{children}</table>
     </div>
   );
 }

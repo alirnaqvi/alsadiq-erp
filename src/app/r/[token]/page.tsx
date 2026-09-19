@@ -40,7 +40,7 @@ export default async function PublicReceiptPage({
 
   return (
     <main className="min-h-dvh bg-paper px-4 py-8 print:bg-white print:p-0">
-      <div className="no-print mx-auto mb-6 flex max-w-[210mm] items-center justify-between gap-3">
+      <div className="no-print mx-auto mb-6 flex max-w-[210mm] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-ink-500">Official donation receipt · save as PDF from the print dialog</p>
         <PrintPdfButton />
       </div>

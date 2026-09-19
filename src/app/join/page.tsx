@@ -9,7 +9,7 @@ export default async function JoinPage() {
   const name = settings.org_name || "Al Sadiq Trust";
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-5 py-10">
+    <main className="mx-auto min-h-dvh w-full max-w-md px-4 py-8 sm:px-5 sm:py-10">
       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brass-600">{name}</p>
       <h1 className="mt-3 text-2xl font-semibold tracking-tight text-ink-900">Become a donor</h1>
       <p className="mt-2 text-sm leading-relaxed text-ink-500">
