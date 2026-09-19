@@ -77,6 +77,14 @@ input[inputmode="tel"] {
   }
 }
 
+.sidebar-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sidebar-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* Receipts print full-page for now (thermal printer count/rollout is not yet
    confirmed with the trust). Once that's settled, reintroduce an 80mm mode -
    e.g. a print-format toggle - rather than assuming one printer setup. */

@@ -30,10 +30,10 @@ export default function Shell({
   const groups = [...new Set(items.map((i) => i.group))];
 
   const nav = (
-    <nav className="flex flex-col gap-6">
+    <nav className="flex flex-col gap-4">
       {groups.map((group) => (
         <div key={group}>
-          <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-500">
+          <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-500">
             {group}
           </p>
           <ul className="space-y-0.5">
@@ -49,7 +49,7 @@ export default function Shell({
                       onClick={() => setOpen(false)}
                       aria-current={active ? "page" : undefined}
                       className={cx(
-                        "block rounded-md px-3 py-2 text-sm transition-colors",
+                        "block rounded-md px-3 py-1.5 text-sm transition-colors",
                         active
                           ? "bg-white/10 font-medium text-white"
                           : "text-ink-300 hover:bg-white/5 hover:text-white",
@@ -99,7 +99,7 @@ export default function Shell({
           <p className="tnum mt-1 text-xs text-ink-500">{hijriToday}</p>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 lg:pt-8">{nav}</div>
+        <div className="sidebar-scroll min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:pt-6">{nav}</div>
 
         <div className="shrink-0 border-t border-white/10 bg-ink-950 px-7 py-4">
           <p className="text-sm font-medium text-white">{user.fullName}</p>
