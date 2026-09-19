@@ -8,7 +8,7 @@ import { db } from "@/db";
 import { donors, donations, heads } from "@/db/schema";
 import { assertPermission } from "@/lib/auth";
 import { logAction } from "@/lib/audit";
-import { nextDonorCode, nextReceiptNo } from "@/lib/sequence";
+import { nextDonorCode, nextReceiptNo, newShareToken } from "@/lib/sequence";
 import { normaliseMobile, isValidMobile, money } from "@/lib/format";
 
 export type DonorHit = {
@@ -18,6 +18,7 @@ export type DonorHit = {
   mobile: string;
   city: string | null;
   legacyCode: string | null;
+  additionalNames: string | null;
   lastAmount: string | null;
   lastAt: string | null;
   lastHead: string | null;
@@ -43,6 +44,7 @@ export async function lookupDonor(term: string): Promise<{
       mobile: donors.mobile,
       city: donors.city,
       legacyCode: donors.legacyCode,
+      additionalNames: donors.additionalNames,
     })
     .from(donors)
     .where(
@@ -108,6 +110,7 @@ const schema = z.object({
   slipRef: z.string().optional(),
   slipUrl: z.string().optional(),
   remarks: z.string().optional(),
+  additionalNames: z.string().optional(),
   isMembership: z.string().optional(),
 });
 
@@ -160,6 +163,7 @@ export async function recordDonation(
           address: v.address?.trim() || null,
           city: v.city?.trim() || null,
           legacyCode: v.legacyCode?.trim() || null,
+          additionalNames: v.additionalNames?.trim() || null,
           createdById: user.id,
         })
         .returning();
@@ -201,6 +205,9 @@ export async function recordDonation(
       slipRef: v.slipRef?.trim() || null,
       slipUrl: v.slipUrl?.trim() || null,
       remarks: v.remarks?.trim() || null,
+      additionalNames: v.additionalNames?.trim() || null,
+      source: "staff",
+      shareToken: newShareToken(),
       isMembership: v.isMembership === "on",
       membershipMonth:
         v.isMembership === "on" ? new Date().toISOString().slice(0, 7) : null,

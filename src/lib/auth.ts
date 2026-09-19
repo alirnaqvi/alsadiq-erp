@@ -9,7 +9,9 @@ import { users, roles } from "@/db/schema";
 import type { PermissionKey } from "./permissions";
 
 const COOKIE = "alsadiq_session";
+const PENDING_2FA = "alsadiq_2fa";
 const MAX_AGE = 60 * 60 * 12; // a working day
+const PENDING_MAX_AGE = 60 * 5;
 
 function secret() {
   const s = process.env.AUTH_SECRET;
@@ -57,6 +59,41 @@ export async function createSession(userId: number) {
 export async function destroySession() {
   const jar = await cookies();
   jar.delete(COOKIE);
+  jar.delete(PENDING_2FA);
+}
+
+export async function createPending2fa(userId: number) {
+  const token = await new SignJWT({ uid: userId, pending: true })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime(`${PENDING_MAX_AGE}s`)
+    .sign(secret());
+  const jar = await cookies();
+  jar.set(PENDING_2FA, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: PENDING_MAX_AGE,
+  });
+}
+
+export async function getPending2fa(): Promise<number | null> {
+  const jar = await cookies();
+  const token = jar.get(PENDING_2FA)?.value;
+  if (!token) return null;
+  try {
+    const { payload } = await jwtVerify(token, secret());
+    if (!payload.pending) return null;
+    return Number(payload.uid);
+  } catch {
+    return null;
+  }
+}
+
+export async function clearPending2fa() {
+  const jar = await cookies();
+  jar.delete(PENDING_2FA);
 }
 
 /** Returns the logged-in user, or null. Never throws. */

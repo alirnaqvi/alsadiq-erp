@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { donations, donors, heads, users } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
 import { getSettings } from "@/lib/queries";
+import { appOrigin, ensureShareToken } from "@/lib/tokens";
 import {
   dateTime,
   longDate,
@@ -56,6 +57,11 @@ export default async function ReceiptPage({
 
   if (!row) notFound();
 
+  const token = await ensureShareToken(row.d.id);
+  const origin = await appOrigin();
+  const pdfUrl = `${origin}/r/${token}`;
+
+  const extra = row.d.additionalNames || row.donor.additionalNames;
   const org = {
     name: settings.org_name || "Al Sadiq Trust",
     tagline: settings.org_tagline,
@@ -71,10 +77,13 @@ export default async function ReceiptPage({
     `Receipt: ${row.d.receiptNo}`,
     `Date: ${longDate(row.d.receivedAt)}`,
     `Donor: ${row.donor.fullName} (${row.donor.donorCode})`,
+    extra ? `Also: ${extra}` : "",
     `Head: ${row.parentName ? row.parentName + " / " : ""}${row.headName}`,
     `Amount: Rs ${money(row.d.amount)}`,
     `Method: ${PAYMENT_LABELS[row.d.paymentMethod]}`,
     row.d.status === "pending" ? "Status: Subject to clearance" : "",
+    "",
+    `Official PDF receipt: ${pdfUrl}`,
     "",
     org.footer ?? "",
   ]
@@ -108,7 +117,10 @@ export default async function ReceiptPage({
               {row.d.status !== "void" && (
                 <>
                   <LinkButton href={waLink} target="_blank" rel="noopener noreferrer">
-                    Send on WhatsApp
+                    Send PDF on WhatsApp
+                  </LinkButton>
+                  <LinkButton href={pdfUrl} target="_blank">
+                    Open PDF receipt
                   </LinkButton>
                   {mailLink && <LinkButton href={mailLink}>Email</LinkButton>}
                 </>
@@ -145,6 +157,7 @@ export default async function ReceiptPage({
               collector: row.collector,
               status: row.d.status,
               remarks: row.d.remarks,
+              additionalNames: extra,
             }}
           />
           <div className="no-print mt-4 flex flex-col gap-2">
@@ -203,6 +216,7 @@ export default async function ReceiptPage({
               )}
               {row.d.isMembership && <Detail label="Membership">Counted for {row.d.membershipMonth}</Detail>}
               {row.d.remarks && <Detail label="Remarks">{row.d.remarks}</Detail>}
+              {extra && <Detail label="Additional names">{extra}</Detail>}
             </dl>
 
             {row.d.status === "void" && (

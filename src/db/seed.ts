@@ -12,11 +12,33 @@ const withDemo = process.argv.includes("--demo");
 const ROLE_DEFS = [
   {
     key: "admin",
-    name: "Administrator",
-    level: 10,
+    name: "Super Admin",
+    level: 1,
     dataScope: "all" as const,
-    description: "Full control of the system, including users, roles and setup.",
+    description: "Every permission in the system, including users, roles, confidential data and setup.",
     permissions: ALL_PERMISSIONS,
+  },
+  {
+    key: "limited",
+    name: "Limited Access",
+    level: 22,
+    dataScope: "all" as const,
+    description:
+      "Day-to-day collection view without confidential donor data (no CNIC, email, address or audit trail).",
+    permissions: [
+      "collection.view",
+      "donor.view",
+      "member.manage",
+      "report.view",
+    ],
+  },
+  {
+    key: "collector",
+    name: "Collector",
+    level: 30,
+    dataScope: "own" as const,
+    description: "Can only record new payments and register new donors at the counter.",
+    permissions: ["collection.create", "collection.view", "donor.create", "donor.view"],
   },
   {
     key: "manager",
@@ -32,14 +54,17 @@ const ROLE_DEFS = [
       "donor.create",
       "donor.edit",
       "donor.view",
+      "donor.confidential",
+      "donor.verify",
       "member.manage",
+      "whatsapp.send",
       "report.view",
     ],
   },
   {
     key: "operator",
     name: "Data Entry Operator",
-    level: 30,
+    level: 32,
     dataScope: "own" as const,
     description: "Sits at the counter. Registers donors and records what they receive.",
     permissions: ["collection.create", "collection.view", "donor.create", "donor.view"],
@@ -50,7 +75,31 @@ const ROLE_DEFS = [
     level: 25,
     dataScope: "all" as const,
     description: "Read-only oversight across the whole trust, including the audit trail.",
-    permissions: ["collection.view", "donor.view", "report.view", "audit.view"],
+    permissions: ["collection.view", "donor.view", "donor.confidential", "report.view", "audit.view"],
+  },
+  {
+    key: "verifier",
+    name: "Registration Officer",
+    level: 24,
+    dataScope: "all" as const,
+    description: "Reviews donor-app sign-up requests and decides whether to admit them.",
+    permissions: ["donor.view", "donor.confidential", "donor.verify", "donor.create"],
+  },
+  {
+    key: "storekeeper",
+    name: "Storekeeper",
+    level: 28,
+    dataScope: "own" as const,
+    description: "Looks after trust assets and inventory in/out. No access to donor records.",
+    permissions: ["asset.manage", "inventory.manage"],
+  },
+  {
+    key: "messenger",
+    name: "Outreach",
+    level: 26,
+    dataScope: "all" as const,
+    description: "Sends bulk WhatsApp reminders and receipts. Cannot see CNIC or addresses.",
+    permissions: ["whatsapp.send", "donor.view", "member.manage", "collection.view"],
   },
 ];
 
@@ -96,6 +145,16 @@ const HEAD_DEFS: {
       { code: "AZD-JUL", name: "Juloos arrangements" },
       { code: "AZD-ALM", name: "Alam & Taboot" },
       { code: "AZD-SND", name: "Sound & lighting" },
+    ],
+  },
+  {
+    code: "AZADARI_SHARE",
+    name: "Azadari Share",
+    nameUr: "عزاداری شیئر",
+    children: [
+      { code: "AZS-MAJ", name: "Majalis" },
+      { code: "AZS-GEN", name: "General Azadari Share" },
+      { code: "AZS-NYZ", name: "Niyaz & tabarruk" },
     ],
   },
   {
@@ -161,7 +220,13 @@ async function main() {
       .values({ ...r, isSystem: true })
       .onConflictDoUpdate({
         target: roles.key,
-        set: { permissions: r.permissions, dataScope: r.dataScope, level: r.level },
+        set: {
+          name: r.name,
+          description: r.description,
+          permissions: r.permissions,
+          dataScope: r.dataScope,
+          level: r.level,
+        },
       });
   }
   const roleRows = await db.select().from(roles);

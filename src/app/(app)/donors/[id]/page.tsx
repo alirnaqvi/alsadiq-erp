@@ -25,6 +25,7 @@ export default async function DonorPage({ params }: { params: Promise<{ id: stri
   const donorId = Number(id);
   const user = await requirePermission("donor.view");
   const settings = await getSettings();
+  const canSeeConfidential = user.permissions.includes("donor.confidential");
 
   const [donor] = await db.select().from(donors).where(eq(donors.id, donorId)).limit(1);
   if (!donor) notFound();
@@ -94,6 +95,9 @@ export default async function DonorPage({ params }: { params: Promise<{ id: stri
         }
         actions={
           <>
+            <LinkButton href={`/donors/${donor.id}/ledger`}>
+              Donor ledger
+            </LinkButton>
             <LinkButton href={waLink} target="_blank" rel="noopener noreferrer">
               Send statement
             </LinkButton>
@@ -182,15 +186,26 @@ export default async function DonorPage({ params }: { params: Promise<{ id: stri
             <h2 className="text-sm font-semibold text-ink-900">Details</h2>
             <dl className="mt-3 space-y-3 text-sm">
               <Row label="Mobile" value={donor.mobile} mono />
-              {donor.altMobile && <Row label="Alternate" value={donor.altMobile} mono />}
+              {donor.additionalNames && (
+                <Row label="Additional names" value={donor.additionalNames} />
+              )}
+              {canSeeConfidential && donor.altMobile && (
+                <Row label="Alternate" value={donor.altMobile} mono />
+              )}
               {donor.sharesMobileWith && (
                 <Row label="Number held by" value={donor.sharesMobileWith} />
               )}
-              {donor.cnic && <Row label="CNIC" value={donor.cnic} mono />}
-              {donor.email && <Row label="Email" value={donor.email} />}
+              {canSeeConfidential && donor.cnic && <Row label="CNIC" value={donor.cnic} mono />}
+              {canSeeConfidential && donor.email && <Row label="Email" value={donor.email} />}
               {donor.city && <Row label="City" value={donor.city} />}
-              {donor.address && <Row label="Address" value={donor.address} />}
-              {donor.notes && <Row label="Notes" value={donor.notes} />}
+              {canSeeConfidential && donor.address && <Row label="Address" value={donor.address} />}
+              {canSeeConfidential && donor.notes && <Row label="Notes" value={donor.notes} />}
+              {!canSeeConfidential && (
+                <Row
+                  label="Confidential"
+                  value="CNIC, email and address are hidden for your role."
+                />
+              )}
               <Row
                 label="Registered"
                 value={`${longDate(donor.createdAt)}${creator?.name ? ` by ${creator.name}` : ""}`}

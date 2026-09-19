@@ -36,7 +36,9 @@ export default async function DonorsPage({
         ilike(donors.mobile, `%${q}%`),
         ilike(donors.donorCode, `%${q}%`),
         ilike(donors.legacyCode, `%${q}%`),
-        ilike(donors.cnic, `%${q}%`),
+        ...(user.permissions.includes("donor.confidential")
+          ? [ilike(donors.cnic, `%${q}%`)]
+          : []),
       )
     : undefined;
 

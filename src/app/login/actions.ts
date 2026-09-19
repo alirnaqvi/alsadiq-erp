@@ -4,10 +4,19 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users, roles } from "@/db/schema";
-import { createSession, destroySession, verifyPassword, getSession } from "@/lib/auth";
+import {
+  createSession,
+  createPending2fa,
+  getPending2fa,
+  clearPending2fa,
+  destroySession,
+  verifyPassword,
+  getSession,
+} from "@/lib/auth";
+import { verifyTotp } from "@/lib/totp";
 import { logAction } from "@/lib/audit";
 
-export type LoginState = { error?: string };
+export type LoginState = { error?: string; need2fa?: boolean };
 
 export async function login(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const username = String(formData.get("username") ?? "").trim().toLowerCase();
@@ -23,6 +32,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
       fullName: users.fullName,
       passwordHash: users.passwordHash,
       isActive: users.isActive,
+      totpEnabled: users.totpEnabled,
       roleName: roles.name,
     })
     .from(users)
@@ -30,7 +40,6 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     .where(eq(users.username, username))
     .limit(1);
 
-  // Same message either way — it should not reveal which usernames exist.
   if (!row || !(await verifyPassword(password, row.passwordHash))) {
     await logAction({
       actor: null,
@@ -45,17 +54,58 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     return { error: "This account has been deactivated. Ask an administrator to restore it." };
   }
 
-  await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, row.id));
-  await createSession(row.id);
+  if (row.totpEnabled) {
+    await createPending2fa(row.id);
+    return { need2fa: true };
+  }
+
+  await finishLogin(row.id, row.fullName, row.roleName);
+  redirect("/dashboard");
+}
+
+export async function verifyLogin2fa(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  const code = String(formData.get("code") ?? "");
+  const uid = await getPending2fa();
+  if (!uid) return { error: "That sign-in expired. Enter your password again." };
+
+  const [row] = await db
+    .select({
+      id: users.id,
+      fullName: users.fullName,
+      totpSecret: users.totpSecret,
+      totpEnabled: users.totpEnabled,
+      roleName: roles.name,
+    })
+    .from(users)
+    .innerJoin(roles, eq(users.roleId, roles.id))
+    .where(eq(users.id, uid))
+    .limit(1);
+
+  if (!row?.totpEnabled || !row.totpSecret || !verifyTotp(row.totpSecret, code)) {
+    await logAction({
+      actor: { id: row?.id ?? uid, fullName: row?.fullName ?? "unknown" },
+      action: "login_failed",
+      entityType: "user",
+      summary: "Failed 2FA challenge",
+    });
+    return { need2fa: true, error: "That code is not valid. Try the next one from your authenticator." };
+  }
+
+  await clearPending2fa();
+  await finishLogin(row.id, row.fullName, row.roleName);
+  redirect("/dashboard");
+}
+
+async function finishLogin(id: number, fullName: string, roleName: string) {
+  await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, id));
+  await createSession(id);
   await logAction({
-    actor: { id: row.id, fullName: row.fullName },
+    actor: { id, fullName },
     action: "login",
     entityType: "user",
-    entityId: row.id,
-    summary: `${row.fullName} signed in as ${row.roleName}`,
+    entityId: id,
+    summary: `${fullName} signed in as ${roleName}`,
   });
-
-  redirect("/dashboard");
 }
 
 export async function logout() {

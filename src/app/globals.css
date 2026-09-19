@@ -95,8 +95,12 @@ input[inputmode="tel"] {
     border-radius: 0 !important;
     zoom: 2;
   }
+  .formal-receipt {
+    box-shadow: none !important;
+    max-width: none !important;
+  }
   @page {
     size: auto;
-    margin: 16mm;
+    margin: 12mm;
   }
 }

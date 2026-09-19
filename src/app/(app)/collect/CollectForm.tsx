@@ -60,6 +60,7 @@ export default function CollectForm({
   const [slipUrl, setSlipUrl] = useState("");
   const [slipError, setSlipError] = useState<string | null>(null);
   const [remarks, setRemarks] = useState("");
+  const [additionalNames, setAdditionalNames] = useState("");
   const [isMembership, setIsMembership] = useState(false);
 
   function handleSlipChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -119,6 +120,10 @@ export default function CollectForm({
     return () => clearTimeout(timer);
   }, [term]);
 
+  useEffect(() => {
+    if (donor?.additionalNames != null) setAdditionalNames(donor.additionalNames);
+  }, [donor?.id, donor?.additionalNames]);
+
   /* Ctrl+Enter saves from anywhere in the form. */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -134,6 +139,7 @@ export default function CollectForm({
   const chooseDonor = (d: DonorHit) => {
     setTerm(d.mobile);
     setResult({ term: d.mobile, exact: d, matches: [] });
+    setAdditionalNames(d.additionalNames ?? "");
     amountRef.current?.focus();
   };
 
@@ -255,6 +261,13 @@ export default function CollectForm({
                     </Field>
                     <Field label="Old donor number">
                       <Input name="legacyCode" placeholder="From the previous register" />
+                    </Field>
+                    <Field
+                      label="Additional names on receipt"
+                      hint="Family members or other names to print on this receipt."
+                      className="sm:col-span-2"
+                    >
+                      <Input name="additionalNames" placeholder="Syeda Fatima, Ali Abbas" />
                     </Field>
                     <Field label="Address" className="sm:col-span-2">
                       <Input name="address" />
@@ -418,6 +431,20 @@ export default function CollectForm({
           {fe.chequeNo && <p className="mt-1 text-sm text-alert-700">{fe.chequeNo}</p>}
 
           <div className="mt-4">
+            <Field
+              label="Additional names on this receipt"
+              hint="Optional. Printed next to the donor — for family members or on-behalf names."
+            >
+              <Input
+                name="additionalNames"
+                value={additionalNames}
+                onChange={(e) => setAdditionalNames(e.target.value)}
+                placeholder="Syeda Fatima, Ali Abbas"
+              />
+            </Field>
+          </div>
+
+          <div className="mt-4">
             <Field label="Remarks">
               <Textarea
                 name="remarks"
@@ -476,6 +503,7 @@ export default function CollectForm({
             collector,
             status: method === "cheque" ? "pending" : "completed",
             remarks: remarks || null,
+            additionalNames: additionalNames || null,
           }}
         />
         <p className="mt-3 text-center text-xs text-ink-500">

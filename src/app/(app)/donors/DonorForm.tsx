@@ -16,6 +16,7 @@ type Donor = {
   city: string | null;
   legacyCode: string | null;
   sharesMobileWith: string | null;
+  additionalNames: string | null;
   notes: string | null;
 };
 
@@ -69,6 +70,17 @@ export default function DonorForm({ donor }: { donor?: Donor }) {
             className="sm:col-span-2"
           >
             <Input name="sharesMobileWith" defaultValue={donor?.sharesMobileWith ?? ""} />
+          </Field>
+          <Field
+            label="Additional names on receipts"
+            hint="Family members or other names to print on receipts."
+            className="sm:col-span-2"
+          >
+            <Input
+              name="additionalNames"
+              defaultValue={donor?.additionalNames ?? ""}
+              placeholder="Syeda Fatima, Ali Abbas"
+            />
           </Field>
         </div>
       </Card>

@@ -23,6 +23,7 @@ function read(formData: FormData) {
     city: String(formData.get("city") ?? "").trim(),
     legacyCode: String(formData.get("legacyCode") ?? "").trim(),
     sharesMobileWith: String(formData.get("sharesMobileWith") ?? "").trim(),
+    additionalNames: String(formData.get("additionalNames") ?? "").trim(),
     notes: String(formData.get("notes") ?? "").trim(),
   };
 }
@@ -74,6 +75,7 @@ export async function createDonor(
       city: v.city || null,
       legacyCode: v.legacyCode || null,
       sharesMobileWith: v.sharesMobileWith || null,
+      additionalNames: v.additionalNames || null,
       notes: v.notes || null,
       createdById: user.id,
     })
@@ -131,6 +133,7 @@ export async function updateDonor(
       city: v.city || null,
       legacyCode: v.legacyCode || null,
       sharesMobileWith: v.sharesMobileWith || null,
+      additionalNames: v.additionalNames || null,
       notes: v.notes || null,
       updatedAt: new Date(),
     })

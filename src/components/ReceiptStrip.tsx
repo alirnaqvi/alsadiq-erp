@@ -17,6 +17,7 @@ export type ReceiptData = {
   collector: string;
   status?: string;
   remarks?: string | null;
+  additionalNames?: string | null;
 };
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
@@ -80,6 +81,7 @@ export default function ReceiptStrip({ data }: { data: ReceiptData }) {
 
       <div className="my-3 border-t border-dashed border-ink-300 pt-2 space-y-0.5">
         <Row label="Donor" value={data.donorName} />
+        {data.additionalNames && <Row label="Also" value={data.additionalNames} />}
         <Row label="ID" value={data.donorCode} />
         <Row label="Mobile" value={data.mobile} />
       </div>

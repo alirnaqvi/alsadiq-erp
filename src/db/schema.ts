@@ -68,6 +68,8 @@ export const users = pgTable(
     postedAt: varchar("posted_at", { length: 80 }), // counter / area, free text for now
     isActive: boolean("is_active").notNull().default(true),
     mustChangePassword: boolean("must_change_password").notNull().default(false),
+    totpSecret: text("totp_secret"),
+    totpEnabled: boolean("totp_enabled").notNull().default(false),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -101,6 +103,10 @@ export const donors = pgTable(
     // set when several people genuinely share one number (family account)
     sharesMobileWith: varchar("shares_mobile_with", { length: 24 }),
     notes: text("notes"),
+    // extra people to print on receipts (family / on-behalf names)
+    additionalNames: text("additional_names"),
+    // PIN hash for the donor mobile app; null until they register or an admin sets it
+    appPinHash: text("app_pin_hash"),
     isActive: boolean("is_active").notNull().default(true),
     createdById: integer("created_by_id").references(() => users.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -169,6 +175,9 @@ export const donations = pgTable(
     isMembership: boolean("is_membership").notNull().default(false),
     membershipMonth: varchar("membership_month", { length: 7 }), // YYYY-MM
     remarks: text("remarks"),
+    additionalNames: text("additional_names"),
+    source: varchar("source", { length: 24 }).notNull().default("staff"), // staff | donor_app
+    shareToken: varchar("share_token", { length: 40 }).unique(),
     voidedById: integer("voided_by_id").references(() => users.id),
     voidReason: text("void_reason"),
     voidedAt: timestamp("voided_at", { withTimezone: true }),
@@ -257,4 +266,103 @@ export const counters = pgTable("counters", {
 export const settings = pgTable("settings", {
   key: varchar("key", { length: 60 }).primaryKey(),
   value: text("value"),
+});
+
+/* ----------------------------------------- donor-app registrations */
+
+export const donorRegistrations = pgTable(
+  "donor_registrations",
+  {
+    id: serial("id").primaryKey(),
+    fullName: varchar("full_name", { length: 140 }).notNull(),
+    mobile: varchar("mobile", { length: 24 }).notNull(),
+    email: varchar("email", { length: 160 }),
+    cnic: varchar("cnic", { length: 20 }),
+    address: text("address"),
+    city: varchar("city", { length: 80 }),
+    additionalNames: text("additional_names"),
+    pinHash: text("pin_hash").notNull(),
+    notes: text("notes"),
+    status: varchar("status", { length: 16 }).notNull().default("pending"), // pending | approved | rejected
+    reviewedById: integer("reviewed_by_id").references(() => users.id),
+    reviewNote: text("review_note"),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    donorId: integer("donor_id").references(() => donors.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("reg_status_idx").on(t.status),
+    index("reg_mobile_idx").on(t.mobile),
+  ],
+);
+
+/* ------------------------------------------------------------- assets */
+
+export const assets = pgTable(
+  "assets",
+  {
+    id: serial("id").primaryKey(),
+    assetCode: varchar("asset_code", { length: 20 }).notNull().unique(),
+    name: varchar("name", { length: 160 }).notNull(),
+    category: varchar("category", { length: 80 }),
+    location: varchar("location", { length: 120 }),
+    serialNo: varchar("serial_no", { length: 80 }),
+    purchaseDate: date("purchase_date"),
+    purchaseValue: numeric("purchase_value", { precision: 12, scale: 2 }),
+    status: varchar("status", { length: 24 }).notNull().default("in_use"), // in_use | stored | under_repair | disposed
+    notes: text("notes"),
+    createdById: integer("created_by_id").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("assets_status_idx").on(t.status)],
+);
+
+/* ---------------------------------------------------------- inventory */
+
+export const inventoryItems = pgTable(
+  "inventory_items",
+  {
+    id: serial("id").primaryKey(),
+    itemCode: varchar("item_code", { length: 20 }).notNull().unique(),
+    name: varchar("name", { length: 160 }).notNull(),
+    unit: varchar("unit", { length: 24 }).notNull().default("pcs"),
+    location: varchar("location", { length: 120 }),
+    minQty: numeric("min_qty", { precision: 12, scale: 2 }).notNull().default("0"),
+    qtyOnHand: numeric("qty_on_hand", { precision: 12, scale: 2 }).notNull().default("0"),
+    notes: text("notes"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdById: integer("created_by_id").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("inv_name_idx").on(t.name)],
+);
+
+export const inventoryMoves = pgTable(
+  "inventory_moves",
+  {
+    id: serial("id").primaryKey(),
+    itemId: integer("item_id")
+      .notNull()
+      .references(() => inventoryItems.id),
+    kind: varchar("kind", { length: 12 }).notNull(), // in | out | adjust
+    qty: numeric("qty", { precision: 12, scale: 2 }).notNull(),
+    reason: varchar("reason", { length: 160 }),
+    ref: varchar("ref", { length: 80 }),
+    movedAt: timestamp("moved_at", { withTimezone: true }).notNull().defaultNow(),
+    createdById: integer("created_by_id").references(() => users.id),
+  },
+  (t) => [index("inv_moves_item_idx").on(t.itemId)],
+);
+
+/* ----------------------------------------------- whatsapp campaigns */
+
+export const whatsappCampaigns = pgTable("whatsapp_campaigns", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 120 }).notNull(),
+  body: text("body").notNull(),
+  audience: varchar("audience", { length: 40 }).notNull().default("all"),
+  recipientCount: integer("recipient_count").notNull().default(0),
+  createdById: integer("created_by_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
