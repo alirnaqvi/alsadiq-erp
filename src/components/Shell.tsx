@@ -81,36 +81,33 @@ export default function Shell({
         </button>
       </header>
 
-      {/* Sidebar */}
+      {/* Sidebar: brand + scrolling nav + account stay on the same dark panel. */}
       <aside
         className={cx(
-          "no-print bg-ink-950 text-white lg:sticky lg:top-0 lg:h-dvh lg:w-64 lg:shrink-0",
-          open ? "block" : "hidden lg:block",
+          "no-print flex flex-col bg-ink-950 text-white lg:sticky lg:top-0 lg:h-dvh lg:w-64 lg:shrink-0",
+          open ? "flex" : "hidden lg:flex",
         )}
       >
-        <div className="flex h-full flex-col justify-between px-4 py-6">
-          <div>
-            <div className="hidden px-3 lg:block">
-              {logo && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={logo} alt="" className="mb-2 h-9 w-9 object-contain" />
-              )}
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brass-600">
-                {orgName || "Al Sadiq Trust"}
-              </p>
-              <p className="tnum mt-1 text-xs text-ink-500">{hijriToday}</p>
-            </div>
-            <div className="mt-0 lg:mt-8">{nav}</div>
-          </div>
+        <div className="hidden shrink-0 px-7 pt-6 lg:block">
+          {logo && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logo} alt="" className="mb-2 h-9 w-9 object-contain" />
+          )}
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brass-600">
+            {orgName || "Al Sadiq Trust"}
+          </p>
+          <p className="tnum mt-1 text-xs text-ink-500">{hijriToday}</p>
+        </div>
 
-          <div className="mt-8 border-t border-white/10 pt-4">
-            <p className="px-3 text-sm font-medium text-white">{user.fullName}</p>
-            <p className="px-3 text-xs text-ink-500">
-              {user.roleName}
-              {user.postedAt ? ` · ${user.postedAt}` : ""}
-            </p>
-            <div className="mt-3 px-3">{onSignOut}</div>
-          </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 lg:pt-8">{nav}</div>
+
+        <div className="shrink-0 border-t border-white/10 bg-ink-950 px-7 py-4">
+          <p className="text-sm font-medium text-white">{user.fullName}</p>
+          <p className="text-xs text-ink-300">
+            {user.roleName}
+            {user.postedAt ? ` · ${user.postedAt}` : ""}
+          </p>
+          <div className="mt-3">{onSignOut}</div>
         </div>
       </aside>
 
