@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { gatherings, sponsorships, donors } from "@/db/schema";
@@ -11,15 +12,14 @@ import { waNumber } from "@/lib/format";
 
 export type GatheringState = { error?: string; ok?: string };
 
-export async function saveGathering(formData: FormData): Promise<void> {
-  const user = await assertPermission("event.manage");
+function gatheringFields(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const gregorianDate = String(formData.get("gregorianDate") ?? "").trim();
-  if (title.length < 3 || !gregorianDate) return;
   const h = hijriYmd(`${gregorianDate}T00:00:00+05:00`);
-  const [created] = await db
-    .insert(gatherings)
-    .values({
+  return {
+    title,
+    gregorianDate,
+    values: {
       title,
       titleUr: String(formData.get("titleUr") ?? "").trim() || null,
       kind: String(formData.get("kind") ?? "majlis"),
@@ -31,18 +31,63 @@ export async function saveGathering(formData: FormData): Promise<void> {
       location: String(formData.get("location") ?? "").trim() || "Masjid o Imam Bargah Al-Sadiq Trust",
       description: String(formData.get("description") ?? "").trim() || null,
       isPublic: formData.get("isPublic") === "on",
-      createdById: user.id,
-    })
-    .returning();
+    },
+  };
+}
+
+export async function saveGathering(formData: FormData): Promise<void> {
+  const user = await assertPermission("event.manage");
+  const id = Number(formData.get("id") ?? 0);
+  const { title, gregorianDate, values } = gatheringFields(formData);
+  if (title.length < 3 || !gregorianDate) return;
+
+  if (id) {
+    const [existing] = await db.select({ id: gatherings.id }).from(gatherings).where(eq(gatherings.id, id)).limit(1);
+    if (!existing) return;
+    await db.update(gatherings).set(values).where(eq(gatherings.id, id));
+    await logAction({
+      actor: user,
+      action: "update",
+      entityType: "gathering",
+      entityId: id,
+      summary: `Updated gathering ${title} on ${gregorianDate}`,
+    });
+  } else {
+    const [created] = await db
+      .insert(gatherings)
+      .values({ ...values, createdById: user.id })
+      .returning();
+    await logAction({
+      actor: user,
+      action: "create",
+      entityType: "gathering",
+      entityId: created.id,
+      summary: `Added gathering ${created.title} on ${gregorianDate}`,
+    });
+  }
+  revalidatePath("/calendar");
+  revalidatePath("/m/calendar");
+  redirect("/calendar");
+}
+
+export async function deleteGathering(formData: FormData): Promise<void> {
+  const user = await assertPermission("event.manage");
+  const id = Number(formData.get("id") ?? 0);
+  if (!id) return;
+  const [existing] = await db.select().from(gatherings).where(eq(gatherings.id, id)).limit(1);
+  if (!existing) return;
+  await db.delete(sponsorships).where(eq(sponsorships.gatheringId, id));
+  await db.delete(gatherings).where(eq(gatherings.id, id));
   await logAction({
     actor: user,
-    action: "create",
+    action: "delete",
     entityType: "gathering",
-    entityId: created.id,
-    summary: `Added gathering ${created.title} on ${gregorianDate}`,
+    entityId: id,
+    summary: `Removed gathering ${existing.title} on ${existing.gregorianDate}`,
   });
   revalidatePath("/calendar");
   revalidatePath("/m/calendar");
+  redirect("/calendar");
 }
 
 export type ReviewState = { error?: string; ok?: string };

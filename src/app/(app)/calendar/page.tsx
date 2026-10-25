@@ -1,18 +1,24 @@
-import { and, desc, eq, gte } from "drizzle-orm";
+import { desc, eq, gte } from "drizzle-orm";
 import { db } from "@/db";
 import { gatherings, sponsorships, donors } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { hijri, longDate, money, ymd } from "@/lib/format";
 import { tx } from "@/lib/i18n";
 import { getLocale } from "@/lib/locale";
-import { Badge, Button, Card, Field, Input, PageHeader, Select, Textarea } from "@/components/ui";
+import { Badge, Button, Card, Field, Input, LinkButton, PageHeader, Select, Textarea } from "@/components/ui";
 import EventCalendar from "@/components/EventCalendar";
 import { saveGathering, reviewSponsorship } from "./actions";
 import WhatsAppStatusLink from "./WhatsAppStatusLink";
+import GatheringActions from "./GatheringActions";
 
 export const dynamic = "force-dynamic";
 
-export default async function CalendarPage() {
+export default async function CalendarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ edit?: string }>;
+}) {
+  const { edit } = await searchParams;
   const user = await requireUser();
   const t = tx(await getLocale());
   const today = ymd();
@@ -40,6 +46,8 @@ export default async function CalendarPage() {
 
   const canManage = user.permissions.includes("event.manage");
   const canReview = user.permissions.includes("sponsorship.review");
+  const editingId = Number(edit ?? 0);
+  const editing = canManage && editingId ? (events.find((e) => e.id === editingId) ?? null) : null;
 
   return (
     <>
@@ -81,6 +89,7 @@ export default async function CalendarPage() {
                       <p className="tnum font-semibold text-primary">Rs {money(e.suggestedAmount)}</p>
                     )}
                     <p className="text-xs capitalize text-muted-foreground">{e.kind}</p>
+                    {canManage && <GatheringActions id={e.id} />}
                   </div>
                 </li>
               ))}
@@ -134,18 +143,26 @@ export default async function CalendarPage() {
         </div>
 
         {canManage && (
-          <form action={saveGathering}>
+          <form action={saveGathering} key={editing?.id ?? "new"}>
+            {editing && <input type="hidden" name="id" value={editing.id} />}
             <Card>
-              <h2 className="mb-4 text-sm font-semibold">Add a gathering</h2>
+              <h2 className="mb-4 text-sm font-semibold">
+                {editing ? "Edit gathering" : "Add a gathering"}
+              </h2>
               <div className="space-y-3">
                 <Field label="Title" required>
-                  <Input name="title" required placeholder="Ayyam-e-Fatimiyya majlis" />
+                  <Input
+                    name="title"
+                    required
+                    placeholder="Ayyam-e-Fatimiyya majlis"
+                    defaultValue={editing?.title ?? ""}
+                  />
                 </Field>
                 <Field label="Urdu title">
-                  <Input name="titleUr" dir="rtl" />
+                  <Input name="titleUr" dir="rtl" defaultValue={editing?.titleUr ?? ""} />
                 </Field>
                 <Field label="Kind">
-                  <Select name="kind" defaultValue="majlis">
+                  <Select name="kind" defaultValue={editing?.kind ?? "majlis"}>
                     <option value="majlis">Majlis</option>
                     <option value="milad">Milad</option>
                     <option value="niaz">Niaz / langar</option>
@@ -153,22 +170,46 @@ export default async function CalendarPage() {
                   </Select>
                 </Field>
                 <Field label="Date" required>
-                  <Input name="gregorianDate" type="date" required />
+                  <Input
+                    name="gregorianDate"
+                    type="date"
+                    required
+                    defaultValue={editing ? ymd(editing.gregorianDate) : ""}
+                  />
                 </Field>
                 <Field label="Suggested amount (Rs)">
-                  <Input name="suggestedAmount" inputMode="numeric" />
+                  <Input
+                    name="suggestedAmount"
+                    inputMode="numeric"
+                    defaultValue={editing?.suggestedAmount ?? ""}
+                  />
                 </Field>
                 <Field label="Location">
-                  <Input name="location" defaultValue="Masjid o Imam Bargah Al-Sadiq Trust" />
+                  <Input
+                    name="location"
+                    defaultValue={editing?.location ?? "Masjid o Imam Bargah Al-Sadiq Trust"}
+                  />
                 </Field>
                 <Field label="Note">
-                  <Textarea name="description" rows={3} />
+                  <Textarea name="description" rows={3} defaultValue={editing?.description ?? ""} />
                 </Field>
                 <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" name="isPublic" defaultChecked className="size-4 accent-primary" />
+                  <input
+                    type="checkbox"
+                    name="isPublic"
+                    defaultChecked={editing ? editing.isPublic : true}
+                    className="size-4 accent-primary"
+                  />
                   Visible to donors
                 </label>
-                <Button type="submit">Save gathering</Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="submit">{editing ? "Save changes" : "Save gathering"}</Button>
+                  {editing && (
+                    <LinkButton href="/calendar" variant="ghost">
+                      Cancel
+                    </LinkButton>
+                  )}
+                </div>
               </div>
             </Card>
           </form>
