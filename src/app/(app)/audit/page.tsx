@@ -4,6 +4,8 @@ import { db } from "@/db";
 import { auditLogs } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
 import { dateTime } from "@/lib/format";
+import { tx } from "@/lib/i18n";
+import { getLocale } from "@/lib/locale";
 import { Badge, Card, EmptyState, PageHeader, inputClass } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +38,7 @@ export default async function AuditPage({
 }) {
   const sp = await searchParams;
   await requirePermission("audit.view");
+  const t = tx(await getLocale());
 
   const page = Math.max(1, Number(sp.page ?? 1));
   const filters: (SQL | undefined)[] = [];
@@ -67,9 +70,9 @@ export default async function AuditPage({
   return (
     <>
       <PageHeader
-        eyebrow="Oversight"
-        title="Audit trail"
-        subtitle={`${Number(count?.n ?? 0)} recorded events. Nothing in this system is changed without a line here.`}
+        eyebrow={t("group.oversight")}
+        title={t("pages.audit.title")}
+        subtitle={t("pages.audit.subtitle", { n: Number(count?.n ?? 0) })}
       />
 
       <Card className="mb-5">

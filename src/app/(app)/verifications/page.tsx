@@ -3,6 +3,8 @@ import { db } from "@/db";
 import { donorRegistrations } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
 import { dateTime } from "@/lib/format";
+import { tx } from "@/lib/i18n";
+import { getLocale } from "@/lib/locale";
 import { Badge, Card, EmptyState, PageHeader, Button } from "@/components/ui";
 import { decideRegistration } from "./actions";
 
@@ -10,6 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function VerificationsPage() {
   await requirePermission("donor.verify");
+  const t = tx(await getLocale());
   const rows = await db.select().from(donorRegistrations).orderBy(desc(donorRegistrations.createdAt)).limit(80);
   const pending = rows.filter((r) => r.status === "pending");
   const done = rows.filter((r) => r.status !== "pending");
@@ -17,9 +20,9 @@ export default async function VerificationsPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Donor app"
-        title="Registration requests"
-        subtitle="People who scanned the QR or opened the join link. Approve to add them as donors."
+        eyebrow={t("pages.verifications.eyebrow")}
+        title={t("pages.verifications.title")}
+        subtitle={t("pages.verifications.subtitle")}
       />
 
       <h2 className="mb-3 text-sm font-semibold text-ink-900">Waiting ({pending.length})</h2>

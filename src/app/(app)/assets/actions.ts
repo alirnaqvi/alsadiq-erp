@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { assets } from "@/db/schema";
+import { assets, users } from "@/db/schema";
 import { assertPermission } from "@/lib/auth";
 import { logAction } from "@/lib/audit";
 import { nextAssetCode } from "@/lib/sequence";
@@ -16,11 +16,20 @@ export async function saveAsset(_prev: AssetState, formData: FormData): Promise<
   const name = String(formData.get("name") ?? "").trim();
   if (name.length < 2) return { error: "Enter the asset name." };
 
+  const inchargeUserId = Number(formData.get("inchargeUserId") ?? 0) || null;
+  let inchargeName = String(formData.get("inchargeName") ?? "").trim() || null;
+  if (inchargeUserId && !inchargeName) {
+    const [u] = await db.select({ fullName: users.fullName }).from(users).where(eq(users.id, inchargeUserId)).limit(1);
+    inchargeName = u?.fullName ?? null;
+  }
   const values = {
     name,
     category: String(formData.get("category") ?? "").trim() || null,
     location: String(formData.get("location") ?? "").trim() || null,
     serialNo: String(formData.get("serialNo") ?? "").trim() || null,
+    department: String(formData.get("department") ?? "").trim() || null,
+    inchargeName,
+    inchargeUserId,
     purchaseDate: String(formData.get("purchaseDate") ?? "").trim() || null,
     purchaseValue: String(formData.get("purchaseValue") ?? "").trim() || null,
     status: String(formData.get("status") ?? "in_use"),

@@ -1,44 +1,209 @@
 @import "tailwindcss";
 
-@theme {
-  /* Palette taken from the trust's own world: the black and deep green of
-     Azadari banners, brass of the alam, and the off-white of receipt paper. */
-  --color-ink-950: #0b1013;
-  --color-ink-900: #12181c;
-  --color-ink-800: #1c2529;
-  --color-ink-700: #2b373c;
-  --color-ink-500: #5c6a6b;
-  --color-ink-300: #9aa5a5;
-  --color-ink-200: #c9d0cd;
-  --color-ink-100: #e4e8e5;
-  --color-paper: #f2f4f2;
-  --color-sabz-900: #06342c;
-  --color-sabz-700: #0c4a3e;
-  --color-sabz-600: #135e4d;
-  --color-sabz-100: #dcebe4;
-  --color-brass-600: #9a7b3f;
-  --color-brass-100: #f2e9d6;
-  --color-alert-700: #a4262c;
-  --color-alert-100: #f8e3e3;
+@custom-variant dark (&:is(.dark *));
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo,
-    Consolas, monospace;
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-deep: var(--primary-deep);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-cream: var(--cream);
+  --font-display: var(--font-amiri), "Amiri", Georgia, serif;
+  --font-sans: var(--font-inter), "Inter", system-ui, sans-serif;
+  --font-urdu: var(--font-nastaliq), "Jameel Noori Nastaleeq", serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+
+  /* Legacy ERP names → Hub tokens, so existing screens pick up the palette. */
+  --color-paper: var(--background);
+  --color-ink-950: var(--primary-deep);
+  --color-ink-900: var(--foreground);
+  --color-ink-800: var(--foreground);
+  --color-ink-700: var(--muted-foreground);
+  --color-ink-500: var(--muted-foreground);
+  --color-ink-300: oklch(0.82 0.02 95);
+  --color-ink-200: var(--border);
+  --color-ink-100: var(--muted);
+  --color-sabz-900: var(--primary-deep);
+  --color-sabz-700: var(--primary);
+  --color-sabz-600: var(--primary);
+  --color-sabz-100: oklch(0.38 0.09 155 / 0.12);
+  --color-brass-600: var(--gold);
+  --color-brass-100: oklch(0.74 0.135 80 / 0.18);
+  --color-alert-700: var(--destructive);
+  --color-alert-100: oklch(0.55 0.22 27 / 0.12);
 }
 
-html {
-  -webkit-text-size-adjust: 100%;
-  overflow-x: clip;
+:root {
+  --radius: 0.5rem;
+  --background: oklch(0.99 0.005 95);
+  --foreground: oklch(0.18 0.02 160);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.02 160);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.02 160);
+  --primary: oklch(0.38 0.09 155);
+  --primary-foreground: oklch(0.99 0.005 95);
+  --primary-deep: oklch(0.28 0.08 155);
+  --secondary: oklch(0.95 0.02 95);
+  --secondary-foreground: oklch(0.28 0.08 155);
+  --muted: oklch(0.96 0.01 95);
+  --muted-foreground: oklch(0.45 0.02 160);
+  --accent: oklch(0.78 0.13 85);
+  --accent-foreground: oklch(0.2 0.05 80);
+  --gold: oklch(0.74 0.135 80);
+  --gold-foreground: oklch(0.18 0.02 160);
+  --cream: oklch(0.97 0.015 90);
+  --destructive: oklch(0.55 0.22 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.9 0.02 95);
+  --input: oklch(0.92 0.015 95);
+  --ring: oklch(0.38 0.09 155);
+  --gradient-gold: linear-gradient(135deg, oklch(0.78 0.135 80), oklch(0.65 0.13 70));
+  --gradient-green: linear-gradient(135deg, oklch(0.38 0.09 155), oklch(0.28 0.08 155));
+  --gradient-hero: linear-gradient(135deg, oklch(0.28 0.08 155 / 0.85), oklch(0.38 0.09 155 / 0.7));
+  --shadow-elegant: 0 10px 40px -10px oklch(0.28 0.08 155 / 0.25);
+  --shadow-gold: 0 8px 30px -8px oklch(0.74 0.135 80 / 0.4);
+  --shadow-card: 0 2px 10px -2px oklch(0.18 0.02 160 / 0.08);
 }
 
-body {
-  background: var(--color-paper);
-  color: var(--color-ink-900);
-  font-family: var(--font-sans);
+.dark {
+  --background: oklch(0.15 0.02 160);
+  --foreground: oklch(0.97 0.01 95);
+  --card: oklch(0.2 0.025 160);
+  --card-foreground: oklch(0.97 0.01 95);
+  --popover: oklch(0.2 0.025 160);
+  --popover-foreground: oklch(0.97 0.01 95);
+  --primary: oklch(0.55 0.1 155);
+  --primary-foreground: oklch(0.99 0 0);
+  --primary-deep: oklch(0.42 0.09 155);
+  --secondary: oklch(0.25 0.02 160);
+  --secondary-foreground: oklch(0.97 0.01 95);
+  --muted: oklch(0.25 0.02 160);
+  --muted-foreground: oklch(0.7 0.02 95);
+  --cream: oklch(0.22 0.02 160);
+  --border: oklch(0.3 0.02 160);
+  --input: oklch(0.3 0.02 160);
+  --ring: oklch(0.55 0.1 155);
 }
 
-/* Money, receipt numbers and donor codes must line up in columns. */
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    overflow-x: clip;
+  }
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+}
+
+@font-face {
+  font-family: "Jameel Noori Nastaleeq";
+  src: url("../fonts/JameelNooriNastaleeq.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.urdu {
+  font-family: var(--font-nastaliq), "Jameel Noori Nastaleeq", serif;
+  font-size: 1.5rem;
+  line-height: 1.9;
+  direction: rtl;
+}
+
+html[dir="rtl"] body {
+  font-family: var(--font-nastaliq), "Jameel Noori Nastaleeq", serif;
+  font-size: 1.125rem;
+  line-height: 1.85;
+}
+
+html[dir="rtl"] h1,
+html[dir="rtl"] h2,
+html[dir="rtl"] h3,
+html[dir="rtl"] h4 {
+  font-family: var(--font-nastaliq), "Jameel Noori Nastaleeq", serif;
+  letter-spacing: 0;
+}
+
+html[dir="rtl"] h1 {
+  font-size: 2.25rem;
+  line-height: 1.5;
+}
+
+html[dir="rtl"] h2 {
+  font-size: 1.55rem;
+  line-height: 1.55;
+}
+
+html[dir="rtl"] .uppercase {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+html[dir="rtl"] .text-sm {
+  font-size: 1.0625rem;
+}
+
+html[dir="rtl"] .text-xs {
+  font-size: 0.9375rem;
+}
+
+html[dir="rtl"] aside nav a {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+
+html[dir="rtl"] th {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.95rem;
+}
+
+html[dir="rtl"] .code,
+html[dir="rtl"] .tnum,
+html[dir="rtl"] input,
+html[dir="rtl"] select,
+html[dir="rtl"] textarea,
+html[dir="rtl"] .eyebrow {
+  font-family: var(--font-inter), Inter, system-ui, sans-serif;
+}
+
 .tnum {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
@@ -52,16 +217,22 @@ body {
 
 .eyebrow {
   text-transform: uppercase;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.1em;
   font-size: 0.6875rem;
   font-weight: 600;
-  color: var(--color-ink-500);
+  color: var(--gold);
+}
+
+.container-page {
+  max-width: 80rem;
+  padding-inline: 1.25rem;
+  margin-inline: auto;
 }
 
 *:focus-visible {
-  outline: 2px solid var(--color-sabz-600);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
-  border-radius: 2px;
+  border-radius: 4px;
 }
 
 input[inputmode="numeric"],
@@ -86,9 +257,59 @@ input[inputmode="tel"] {
   display: none;
 }
 
-/* Receipts print full-page for now (thermal printer count/rollout is not yet
-   confirmed with the trust). Once that's settled, reintroduce an 80mm mode -
-   e.g. a print-format toggle - rather than assuming one printer setup. */
+@utility btn-gold {
+  background: var(--gradient-gold);
+  color: var(--gold-foreground);
+  font-weight: 600;
+  padding: 0.75rem 2rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-gold);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px -8px oklch(0.74 0.135 80 / 0.55);
+  }
+}
+@utility btn-outline {
+  background: transparent;
+  color: var(--color-primary);
+  font-weight: 600;
+  padding: 0.75rem 2rem;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--color-primary);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  &:hover {
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
+}
+@utility decorative-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--color-gold);
+  &::before,
+  &::after {
+    content: "";
+    height: 1px;
+    width: 3rem;
+    background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+  }
+}
+
 @media print {
   .no-print {
     display: none !important;

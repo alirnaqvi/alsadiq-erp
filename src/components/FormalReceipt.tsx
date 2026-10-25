@@ -37,22 +37,21 @@ export default function FormalReceipt({ data }: { data: FormalReceiptData }) {
   return (
     <article className="formal-receipt mx-auto w-full max-w-[210mm] bg-white text-ink-900">
       <div className="border-2 border-ink-900">
-        <header className="flex flex-col gap-4 border-b-2 border-ink-900 bg-[#0c4a3e] px-4 py-4 text-white sm:flex-row sm:items-start sm:justify-between sm:px-8 sm:py-6">
+        <header className="flex flex-col gap-4 border-b-2 border-ink-900 bg-primary-deep px-4 py-4 text-primary-foreground sm:flex-row sm:items-start sm:justify-between sm:px-8 sm:py-6">
           <div className="flex items-start gap-3 sm:gap-4">
             {data.org.logo && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={data.org.logo} alt="" className="h-12 w-12 rounded bg-white object-contain p-1 sm:h-16 sm:w-16" />
+              <img src={data.org.logo} alt="" className="h-12 w-12 rounded-full bg-primary-foreground object-contain p-1 sm:h-16 sm:w-16" />
             )}
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d4a017]">
-                Official donation receipt
-              </p>
-              <h1 className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">{data.org.name}</h1>
-              {data.org.tagline && <p className="mt-1 text-sm text-white/80">{data.org.tagline}</p>}
+              <p className="eyebrow">Official donation receipt</p>
+              <h1 className="mt-1 font-display text-xl font-bold tracking-tight sm:text-2xl">{data.org.name}</h1>
+              <p className="urdu mt-1 text-sm text-gold">الصادق ٹرسٹ</p>
+              {data.org.tagline && <p className="mt-1 text-sm text-primary-foreground/80">{data.org.tagline}</p>}
             </div>
           </div>
           <div className="sm:text-right">
-            <p className="text-[11px] uppercase tracking-wider text-white/70">Receipt no.</p>
+            <p className="text-[11px] uppercase tracking-wider text-primary-foreground/70">Receipt no.</p>
             <p className="tnum mt-1 text-lg font-bold sm:text-xl">{data.receiptNo}</p>
           </div>
         </header>

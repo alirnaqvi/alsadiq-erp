@@ -31,21 +31,44 @@ const HIJRI_MONTHS = [
  * named "28th Safar", "9th Muharram". Showing it beside the Gregorian date
  * means staff never have to convert in their head at the counter.
  */
-export function hijri(date: Date | string) {
+export function hijriYmd(date: Date | string) {
   const d = typeof date === "string" ? new Date(date) : date;
+  const parts = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+    timeZone: "Asia/Karachi",
+  }).formatToParts(d);
+  const num = (t: string) => Number((parts.find((p) => p.type === t)?.value ?? "").replace(/\D/g, "") || 0);
+  return { year: num("year"), month: num("month"), day: num("day") };
+}
+
+export function hijriMonthName(month: number) {
+  return HIJRI_MONTHS[month - 1] ?? "";
+}
+
+export function hijri(date: Date | string) {
   try {
-    const parts = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", {
-      day: "numeric",
-      month: "numeric",
-      year: "numeric",
-      timeZone: "Asia/Karachi",
-    }).formatToParts(d);
-    const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
-    const month = Number(get("month"));
-    return `${get("day")} ${HIJRI_MONTHS[month - 1] ?? ""} ${get("year").replace(/\D/g, "")}`;
+    const { day, month, year } = hijriYmd(date);
+    if (!day || !month) return "";
+    return `${day} ${hijriMonthName(month)} ${year}`;
   } catch {
     return "";
   }
+}
+
+/** Find Gregorian dates in the next `horizonDays` that fall on a given Hijri month/day. */
+export function upcomingHijriDates(hijriMonth: number, hijriDay: number, horizonDays = 420, from = new Date()) {
+  const start = new Date(`${ymd(from)}T00:00:00+05:00`);
+  const matches: { gregorian: Date; hijriYear: number }[] = [];
+  for (let i = 0; i < horizonDays; i++) {
+    const d = new Date(start.getTime() + i * 86_400_000);
+    const h = hijriYmd(d);
+    if (h.month === hijriMonth && h.day === hijriDay) {
+      matches.push({ gregorian: d, hijriYear: h.year });
+    }
+  }
+  return matches;
 }
 
 export function longDate(date: Date | string) {

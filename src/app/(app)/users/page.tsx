@@ -2,6 +2,8 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users, roles } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
+import { tx } from "@/lib/i18n";
+import { getLocale } from "@/lib/locale";
 import { PageHeader } from "@/components/ui";
 import UserAdmin from "./UserAdmin";
 
@@ -9,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function UsersPage() {
   const me = await requirePermission("user.manage");
+  const t = tx(await getLocale());
 
   const rows = await db
     .select({
@@ -34,9 +37,9 @@ export default async function UsersPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Setup"
-        title="Users"
-        subtitle="Who can sign in, what they may do, and who reviews their collection."
+        eyebrow={t("group.setup")}
+        title={t("pages.users.title")}
+        subtitle={t("pages.users.subtitle")}
       />
       <UserAdmin
         users={rows.map((r) => ({ ...r, lastLoginAt: r.lastLoginAt?.toISOString() ?? null }))}

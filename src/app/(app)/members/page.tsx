@@ -5,6 +5,8 @@ import { pledges, donors } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
 import { pkMonthBounds, selectableHeads, getSettings } from "@/lib/queries";
 import { money, waNumber, longDate } from "@/lib/format";
+import { tx } from "@/lib/i18n";
+import { getLocale } from "@/lib/locale";
 import {
   Badge,
   Card,
@@ -22,6 +24,7 @@ export const dynamic = "force-dynamic";
 
 export default async function MembersPage() {
   await requirePermission("member.manage");
+  const t = tx(await getLocale());
   const { start, end } = pkMonthBounds();
   const settings = await getSettings();
   const headOptions = await selectableHeads();
@@ -80,8 +83,8 @@ export default async function MembersPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Daily work"
-        title="Monthly members"
+        eyebrow={t("group.daily")}
+        title={t("pages.members.title")}
         subtitle={`${monthLabel} · Rs ${money(received)} received against Rs ${money(pledged)} pledged`}
       />
 

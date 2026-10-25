@@ -10,9 +10,10 @@ export default async function JoinPage() {
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-4 py-8 sm:px-5 sm:py-10">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brass-600">{name}</p>
-      <h1 className="mt-3 text-2xl font-semibold tracking-tight text-ink-900">Become a donor</h1>
-      <p className="mt-2 text-sm leading-relaxed text-ink-500">
+      <p className="eyebrow">{name}</p>
+      <p className="urdu mt-1 w-fit text-sm text-gold">الصادق ٹرسٹ</p>
+      <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-primary">Become a donor</h1>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
         Fill in your details. The trust will review the request. After approval you can see your
         ledger and send payments from the donor app.
       </p>
@@ -21,7 +22,7 @@ export default async function JoinPage() {
       </div>
       <p className="mt-8 text-center text-sm text-ink-500">
         Already approved?{" "}
-        <Link href="/m/login" className="text-sabz-700 underline underline-offset-4">
+        <Link href="/m/login" className="font-semibold text-primary underline underline-offset-4">
           Sign in
         </Link>
       </p>

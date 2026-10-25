@@ -6,6 +6,8 @@ import { donations, donors, heads, users } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
 import { scopeCondition } from "@/lib/queries";
 import { money, longDate, hijri, ymd, PAYMENT_LABELS } from "@/lib/format";
+import { tx } from "@/lib/i18n";
+import { getLocale } from "@/lib/locale";
 import { Card, PageHeader, Table, Td, Th, LinkButton, EmptyState, inputClass, cx } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +25,7 @@ type Search = { view?: string; from?: string; to?: string };
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<Search> }) {
   const sp = await searchParams;
   const user = await requirePermission("report.view");
+  const t = tx(await getLocale());
   const scope = await scopeCondition(user);
 
   const view = TABS.find((t) => t.key === sp.view)?.key ?? "daily";
@@ -58,10 +61,10 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   return (
     <>
       <PageHeader
-        eyebrow="Oversight"
-        title="Reports"
+        eyebrow={t("pages.reports.eyebrow")}
+        title={t("pages.reports.title")}
         subtitle={`${longDate(start)} to ${longDate(new Date(end.getTime() - 86400000))} · ${hijri(start)}`}
-        actions={<LinkButton href={exportHref}>Download Excel</LinkButton>}
+        actions={<LinkButton href={exportHref}>{t("common.downloadExcel")}</LinkButton>}
       />
 
       <Card className="mb-5">

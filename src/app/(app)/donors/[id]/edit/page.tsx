@@ -26,7 +26,12 @@ export default async function EditDonorPage({ params }: { params: Promise<{ id: 
         subtitle="Every change is recorded in the audit trail."
       />
       <div className="max-w-2xl">
-        <DonorForm donor={donor} />
+        <DonorForm
+          donor={{
+            ...donor,
+            dateOfBirth: donor.dateOfBirth ? String(donor.dateOfBirth).slice(0, 10) : null,
+          }}
+        />
       </div>
     </>
   );

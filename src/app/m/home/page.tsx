@@ -42,35 +42,36 @@ export default async function DonorHomePage() {
 
   return (
     <>
-      <h1 className="text-xl font-semibold text-ink-900">Assalam-o-Alaikum, {donor.fullName.split(" ")[0]}</h1>
-      <p className="code mt-1 text-xs text-ink-500">
+      <p className="urdu text-sm text-gold">السلام علیکم</p>
+      <h1 className="font-display text-3xl font-bold text-primary">Assalam-o-Alaikum, {donor.fullName.split(" ")[0]}</h1>
+      <p className="code mt-1 text-xs text-muted-foreground">
         {donor.donorCode} · {donor.mobile}
       </p>
 
       <div className="mt-5 grid grid-cols-2 gap-3">
         <Card>
           <p className="eyebrow">{monthLabel}</p>
-          <p className="tnum mt-1 text-xl font-semibold">Rs {money(monthRow?.total)}</p>
+          <p className="tnum mt-1 font-display text-2xl font-bold text-primary">Rs {money(monthRow?.total)}</p>
         </Card>
         <Card>
           <p className="eyebrow">All time</p>
-          <p className="tnum mt-1 text-xl font-semibold">Rs {money(life?.total)}</p>
+          <p className="tnum mt-1 font-display text-2xl font-bold text-primary">Rs {money(life?.total)}</p>
         </Card>
       </div>
 
       {pledge?.isActive && (
-        <p className="mt-4 rounded-md border border-brass-600/25 bg-brass-100/60 px-3 py-2 text-sm text-ink-800">
+        <p className="mt-4 rounded-xl border border-gold/40 bg-gold/10 px-3 py-2 text-sm text-gold-foreground">
           Monthly pledge Rs {money(pledge.monthlyAmount)}
         </p>
       )}
 
       <div className="mt-5">
-        <LinkButton href="/m/pay" variant="primary" className="w-full">
+        <LinkButton href="/m/pay" variant="gold" className="w-full">
           Make a payment
         </LinkButton>
       </div>
 
-      <h2 className="mt-8 text-sm font-semibold text-ink-900">Recent receipts</h2>
+      <h2 className="mt-8 font-display text-xl font-bold text-primary">Recent receipts</h2>
       <ul className="mt-3 space-y-2">
         {history.slice(0, 8).map((h) => (
           <li key={h.id} className="flex items-center justify-between rounded-md border border-ink-100 bg-white px-3 py-2 text-sm">
@@ -87,7 +88,7 @@ export default async function DonorHomePage() {
         {history.length === 0 && <p className="text-sm text-ink-500">No receipts yet.</p>}
       </ul>
       <p className="mt-4 text-center">
-        <Link href="/m/ledger" className="text-sm text-sabz-700 underline underline-offset-4">
+        <Link href="/m/ledger" className="text-sm font-semibold text-primary underline underline-offset-4">
           Open full ledger
         </Link>
       </p>

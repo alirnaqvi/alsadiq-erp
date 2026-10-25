@@ -3,7 +3,9 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { createDonor, updateDonor, type DonorFormState } from "./actions";
-import { Button, Card, Field, Input, Textarea } from "@/components/ui";
+import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
+import { CITIES } from "@/lib/cities";
+import { BLOOD_GROUPS } from "@/lib/blood-groups";
 
 type Donor = {
   id: number;
@@ -14,6 +16,9 @@ type Donor = {
   email: string | null;
   address: string | null;
   city: string | null;
+  profession: string | null;
+  bloodGroup: string | null;
+  dateOfBirth: string | null;
   legacyCode: string | null;
   sharesMobileWith: string | null;
   additionalNames: string | null;
@@ -71,17 +76,19 @@ export default function DonorForm({ donor }: { donor?: Donor }) {
           >
             <Input name="sharesMobileWith" defaultValue={donor?.sharesMobileWith ?? ""} />
           </Field>
-          <Field
-            label="Additional names on receipts"
-            hint="Family members or other names to print on receipts."
-            className="sm:col-span-2"
-          >
-            <Input
-              name="additionalNames"
-              defaultValue={donor?.additionalNames ?? ""}
-              placeholder="Syeda Fatima, Ali Abbas"
-            />
-          </Field>
+          {donor && (
+            <Field
+              label="Additional names on receipts"
+              hint="Family members or other names to print on receipts."
+              className="sm:col-span-2"
+            >
+              <Input
+                name="additionalNames"
+                defaultValue={donor.additionalNames ?? ""}
+                placeholder="Syeda Fatima, Ali Abbas"
+              />
+            </Field>
+          )}
         </div>
       </Card>
 
@@ -102,13 +109,36 @@ export default function DonorForm({ donor }: { donor?: Donor }) {
           </Field>
           {fe.email && <p className="-mt-3 text-sm text-alert-700">{fe.email}</p>}
           <Field label="City">
-            <Input name="city" defaultValue={donor?.city ?? ""} />
+            <Select name="city" defaultValue={donor?.city ?? ""}>
+              <option value="">Choose city…</option>
+              {CITIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </Select>
           </Field>
           <Field
-            label="Old donor number"
-            hint="The number this donor had in the previous register."
+            label="Membership #"
+            hint="The number from the previous register, e.g. AS-601."
           >
-            <Input name="legacyCode" defaultValue={donor?.legacyCode ?? ""} />
+            <Input name="legacyCode" defaultValue={donor?.legacyCode ?? ""} placeholder="AS-601" />
+          </Field>
+          <Field label="Profession">
+            <Input name="profession" defaultValue={donor?.profession ?? ""} />
+          </Field>
+          <Field label="Blood group">
+            <Select name="bloodGroup" defaultValue={donor?.bloodGroup ?? ""}>
+              <option value="">Unknown</option>
+              {BLOOD_GROUPS.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Date of birth">
+            <Input name="dateOfBirth" type="date" defaultValue={donor?.dateOfBirth ?? ""} />
           </Field>
           <Field label="Address" className="sm:col-span-2">
             <Input name="address" defaultValue={donor?.address ?? ""} />

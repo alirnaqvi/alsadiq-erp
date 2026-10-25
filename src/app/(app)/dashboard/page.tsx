@@ -5,6 +5,8 @@ import { donations, donors, heads, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { scopeCondition, pkDayBounds, pkMonthBounds } from "@/lib/queries";
 import { hijri, longDate, money, moneyWithSymbol, timeOnly } from "@/lib/format";
+import { tx } from "@/lib/i18n";
+import { getLocale } from "@/lib/locale";
 import { Card, LinkButton, PageHeader, Table, Td, Th, Badge, EmptyState } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +18,7 @@ export default async function DashboardPage({
 }) {
   const { denied } = await searchParams;
   const user = await requireUser();
+  const t = tx(await getLocale());
   const scope = await scopeCondition(user);
   const notVoid = ne(donations.status, "void");
   const day = pkDayBounds();
@@ -82,18 +85,18 @@ export default async function DashboardPage({
     <>
       <PageHeader
         eyebrow={`${longDate(new Date())} · ${hijri(new Date())}`}
-        title={`Assalam-o-Alaikum, ${user.fullName.split(" ")[0]}`}
+        title={t("dash.hello", { name: user.fullName.split(" ")[0] })}
         subtitle={
           user.dataScope === "all"
-            ? "Showing collection across the whole trust."
+            ? t("dash.scopeAll")
             : user.dataScope === "team"
-              ? "Showing what you and your team have collected."
-              : "Showing what you have collected."
+              ? t("dash.scopeTeam")
+              : t("dash.scopeOwn")
         }
         actions={
           user.permissions.includes("collection.create") && (
-            <LinkButton href="/collect" variant="primary" size="md">
-              Record a donation
+            <LinkButton href="/collect" variant="gold" size="md" className="px-4 py-2 text-sm">
+              {t("common.recordDonation")}
             </LinkButton>
           )
         }
@@ -102,44 +105,52 @@ export default async function DashboardPage({
       {denied && (
         <p
           role="alert"
-          className="mb-6 rounded-md border border-brass-600/30 bg-brass-100 px-3 py-2 text-sm text-brass-600"
+          className="mb-6 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3 text-sm text-gold-foreground"
         >
-          Your role does not have access to that screen. Ask an administrator if you need it.
+          {t("dash.denied")}
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Collected today" value={moneyWithSymbol(todayRow?.total)} note={`${todayRow?.count ?? 0} receipts`} accent />
-        <Stat label="This month" value={moneyWithSymbol(monthRow?.total)} note={`${monthRow?.count ?? 0} receipts`} />
+      <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] lg:grid-cols-4 lg:divide-x lg:divide-y-0 divide-x divide-y divide-border">
         <Stat
-          label="Awaiting clearance"
-          value={moneyWithSymbol(pendingRow?.total)}
-          note={`${pendingRow?.count ?? 0} cheques / transfers`}
+          label={t("dash.today")}
+          value={moneyWithSymbol(todayRow?.total)}
+          note={t("dash.receiptsN", { n: todayRow?.count ?? 0 })}
         />
-        <Stat label="Registered donors" value={money(donorRow?.count)} note="All time" />
+        <Stat
+          label={t("dash.month")}
+          value={moneyWithSymbol(monthRow?.total)}
+          note={t("dash.receiptsN", { n: monthRow?.count ?? 0 })}
+        />
+        <Stat
+          label={t("dash.awaiting")}
+          value={moneyWithSymbol(pendingRow?.total)}
+          note={t("dash.chequesN", { n: pendingRow?.count ?? 0 })}
+        />
+        <Stat label={t("dash.donors")} value={money(donorRow?.count)} note={t("dash.allTime")} />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-5">
         <Card className="lg:col-span-2">
-          <h2 className="text-sm font-semibold text-ink-900">Where this month came from</h2>
+          <h2 className="font-display text-xl font-bold text-primary">{t("dash.byHead")}</h2>
           {byHead.length === 0 ? (
-            <p className="mt-4 text-sm text-ink-500">Nothing recorded this month yet.</p>
+            <p className="mt-4 text-sm text-muted-foreground">{t("dash.noneMonth")}</p>
           ) : (
             <ul className="mt-4 space-y-3">
               {byHead.map((h) => (
                 <li key={`${h.parent}-${h.head}`}>
                   <div className="flex items-baseline justify-between gap-3">
-                    <span className="truncate text-sm text-ink-800">
-                      {h.parent ? <span className="text-ink-500">{h.parent} · </span> : null}
+                    <span className="truncate text-sm text-foreground">
+                      {h.parent ? <span className="text-muted-foreground">{h.parent} · </span> : null}
                       {h.head}
                     </span>
-                    <span className="tnum shrink-0 text-sm font-medium text-ink-900">
+                    <span className="tnum shrink-0 font-display text-sm font-bold text-primary">
                       {moneyWithSymbol(h.total)}
                     </span>
                   </div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-ink-100">
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
                     <div
-                      className="h-full rounded-full bg-sabz-700"
+                      className="h-full rounded-full bg-gold"
                       style={{ width: `${Math.max(topShare(h.total), 2)}%` }}
                     />
                   </div>
@@ -151,36 +162,36 @@ export default async function DashboardPage({
 
         <Card className="lg:col-span-3" padded={false}>
           <div className="flex items-center justify-between px-5 pb-3 pt-5">
-            <h2 className="text-sm font-semibold text-ink-900">Latest receipts</h2>
+            <h2 className="font-display text-xl font-bold text-primary">{t("dash.latest")}</h2>
             {user.permissions.includes("collection.view") && (
-              <Link href="/receipts" className="text-xs text-sabz-700 underline underline-offset-4">
-                See all
+              <Link href="/receipts" className="text-xs font-semibold text-primary underline underline-offset-4">
+                {t("common.seeAll")}
               </Link>
             )}
           </div>
           {recent.length === 0 ? (
             <div className="px-5 pb-5">
               <EmptyState
-                title="No receipts yet"
-                body="The first donation you record will appear here."
+                title={t("dash.emptyTitle")}
+                body={t("dash.emptyBody")}
               />
             </div>
           ) : (
             <Table>
               <thead>
                 <tr>
-                  <Th>Receipt</Th>
-                  <Th>Donor</Th>
-                  <Th>Head</Th>
-                  <Th align="right">Amount</Th>
-                  <Th align="right">Time</Th>
+                  <Th>{t("dash.colReceipt")}</Th>
+                  <Th>{t("dash.colDonor")}</Th>
+                  <Th>{t("dash.colHead")}</Th>
+                  <Th align="right">{t("dash.colAmount")}</Th>
+                  <Th align="right">{t("dash.colTime")}</Th>
                 </tr>
               </thead>
               <tbody>
                 {recent.map((r) => (
-                  <tr key={r.id} className="hover:bg-paper/70">
+                  <tr key={r.id} className="hover:bg-secondary">
                     <Td>
-                      <Link href={`/receipts/${r.id}`} className="code text-xs text-sabz-700">
+                      <Link href={`/receipts/${r.id}`} className="code text-xs text-primary">
                         {r.receiptNo}
                       </Link>
                       {r.status !== "completed" && (
@@ -192,11 +203,11 @@ export default async function DashboardPage({
                       )}
                     </Td>
                     <Td className="max-w-[10rem] truncate">{r.donorName}</Td>
-                    <Td className="max-w-[10rem] truncate text-ink-500">{r.headName}</Td>
+                    <Td className="max-w-[10rem] truncate text-muted-foreground">{r.headName}</Td>
                     <Td align="right" className="tnum font-medium">
                       {money(r.amount)}
                     </Td>
-                    <Td align="right" className="tnum text-xs text-ink-500">
+                    <Td align="right" className="tnum text-xs text-muted-foreground">
                       {timeOnly(r.receivedAt)}
                     </Td>
                   </tr>
@@ -214,34 +225,16 @@ function Stat({
   label,
   value,
   note,
-  accent,
 }: {
   label: string;
   value: string;
   note: string;
-  accent?: boolean;
 }) {
   return (
-    <div
-      className={
-        accent
-          ? "rounded-lg bg-ink-950 p-5 text-white"
-          : "rounded-lg border border-ink-100 bg-white p-5"
-      }
-    >
-      <p
-        className={
-          accent
-            ? "text-[11px] font-semibold uppercase tracking-[0.09em] text-brass-600"
-            : "eyebrow"
-        }
-      >
-        {label}
-      </p>
-      <p className={`tnum mt-2 text-2xl font-semibold tracking-tight ${accent ? "" : "text-ink-900"}`}>
-        {value}
-      </p>
-      <p className={`mt-1 text-xs ${accent ? "text-ink-300" : "text-ink-500"}`}>{note}</p>
+    <div className="p-6 text-center">
+      <p className="tnum font-display text-3xl font-bold text-primary md:text-4xl">{value}</p>
+      <p className="mt-2 text-sm font-semibold text-foreground">{label}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{note}</p>
     </div>
   );
 }

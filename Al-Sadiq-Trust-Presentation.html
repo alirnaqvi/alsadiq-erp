@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Al Sadiq Trust — today’s demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    @font-face {
+      font-family: "Jameel Noori Nastaleeq";
+      src: url("src/fonts/JameelNooriNastaleeq.woff2") format("woff2");
+      font-display: swap;
+    }
+    :root {
+      --bg: oklch(0.99 0.005 95);
+      --ink: oklch(0.18 0.02 160);
+      --primary: oklch(0.38 0.09 155);
+      --primary-deep: oklch(0.28 0.08 155);
+      --muted: oklch(0.38 0.02 160);
+      --gold: oklch(0.74 0.135 80);
+      --gold-ink: oklch(0.18 0.02 160);
+      --border: oklch(0.9 0.02 95);
+      --gradient-gold: linear-gradient(135deg, oklch(0.78 0.135 80), oklch(0.65 0.13 70));
+      --shadow: 0 10px 40px -10px oklch(0.28 0.08 155 / 0.25);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: var(--primary-deep);
+      color: var(--ink);
+      font-family: Inter, system-ui, sans-serif;
+    }
+    h1, h2 { font-family: Amiri, Georgia, serif; margin: 0; letter-spacing: -0.01em; }
+    .urdu {
+      font-family: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif;
+      direction: rtl;
+      line-height: 2;
+      font-size: clamp(1.7rem, 3.2vw, 2.35rem);
+      color: var(--gold);
+      margin: 0.35rem 0 0;
+    }
+    #deck { height: 100%; display: flex; flex-direction: column; }
+    .progress { height: 6px; background: oklch(0.28 0.04 155); flex: none; }
+    .progress > i { display: block; height: 100%; background: var(--gold); width: 0; transition: width .25s ease; }
+    .stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem 1.4rem 0;
+    }
+    .slide {
+      display: none;
+      width: min(1180px, 100%);
+      min-height: min(680px, calc(100vh - 7.2rem));
+      background: var(--bg);
+      border-radius: 1.25rem;
+      box-shadow: var(--shadow);
+      padding: 3rem 3.6rem 2.6rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .slide.on { display: block; }
+    .slide.cover {
+      background:
+        radial-gradient(1100px 380px at 100% -8%, oklch(0.38 0.09 155 / 0.14), transparent 60%),
+        var(--bg);
+    }
+    .kicker {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin: 0 0 0.6rem;
+    }
+    h2 {
+      font-size: clamp(2.35rem, 4.4vw, 3.5rem);
+      line-height: 1.15;
+      color: var(--primary);
+      max-width: 20ch;
+    }
+    .lead {
+      margin: 1.15rem 0 0;
+      max-width: 40rem;
+      font-size: 1.38rem;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+    ol.how, ul.pts {
+      margin: 1.4rem 0 0;
+      padding: 0;
+      max-width: 44rem;
+    }
+    ul.pts { list-style: none; }
+    ul.pts li, ol.how li {
+      font-size: 1.32rem;
+      line-height: 1.5;
+      margin: 0 0 0.75rem;
+    }
+    ul.pts li {
+      display: flex;
+      gap: 0.9rem;
+      align-items: flex-start;
+    }
+    ul.pts li::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      margin-top: 0.55rem;
+      border-radius: 50%;
+      background: var(--gold);
+      flex: none;
+    }
+    ol.how {
+      list-style: none;
+      counter-reset: step;
+    }
+    ol.how li {
+      counter-increment: step;
+      display: flex;
+      gap: 0.9rem;
+      align-items: flex-start;
+    }
+    ol.how li::before {
+      content: counter(step);
+      flex: none;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 999px;
+      background: var(--primary);
+      color: white;
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.05rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .brand img {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: white;
+      object-fit: contain;
+      padding: 4px;
+    }
+    .brand strong {
+      display: block;
+      font-family: Amiri, Georgia, serif;
+      font-size: 1.45rem;
+      color: var(--primary);
+    }
+    .brand span { display: block; font-size: 1.05rem; color: var(--muted); }
+    .two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.1rem;
+      margin-top: 1.6rem;
+      max-width: 52rem;
+    }
+    .card {
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 1rem;
+      padding: 1.2rem 1.3rem;
+    }
+    .card h3 {
+      font-family: Amiri, Georgia, serif;
+      font-size: 1.7rem;
+      color: var(--primary);
+      margin: 0 0 0.45rem;
+    }
+    .card p { margin: 0; font-size: 1.18rem; line-height: 1.5; color: var(--muted); }
+    .card .u {
+      font-family: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif;
+      direction: rtl;
+      color: var(--gold);
+      font-size: 1.35rem;
+      margin-bottom: 0.35rem;
+    }
+    .bar {
+      flex: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.9rem 1.5rem 1.15rem;
+      color: oklch(0.94 0.02 95);
+      font-size: 1rem;
+    }
+    .dots { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.35rem; }
+    .dots button {
+      width: 10px; height: 10px; border: 0; border-radius: 50%;
+      background: oklch(1 0 0 / 0.25); cursor: pointer; padding: 0;
+    }
+    .dots button.on { background: var(--gold); }
+    .navbtns { display: flex; gap: 0.55rem; }
+    button.nav {
+      font-family: Inter, sans-serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      border-radius: 0.65rem;
+      padding: 0.7rem 1.25rem;
+      cursor: pointer;
+    }
+    button.nav:disabled { opacity: 0.35; cursor: default; }
+    button.prev {
+      background: transparent;
+      color: oklch(0.95 0.02 95);
+      border: 1.5px solid oklch(0.95 0.02 95 / 0.5);
+    }
+    button.next {
+      border: 0;
+      color: var(--gold-ink);
+      background: var(--gradient-gold);
+    }
+    .hint { opacity: 0.75; font-size: 0.95rem; }
+    .seal {
+      position: absolute;
+      right: -1.5rem;
+      bottom: -1.5rem;
+      width: 210px;
+      opacity: 0.08;
+      pointer-events: none;
+    }
+    @media (max-width: 860px) {
+      .slide { padding: 1.6rem 1.2rem; }
+      .two { grid-template-columns: 1fr; }
+      .hint { display: none; }
+    }
+    @media print {
+      body { background: white; }
+      .progress, .bar { display: none; }
+      .stage { display: block; padding: 0; }
+      .slide { display: block !important; box-shadow: none; page-break-after: always; min-height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div id="deck">
+    <div class="progress"><i id="bar"></i></div>
+    <div class="stage">
+
+      <article class="slide cover on" data-slide>
+        <div class="brand">
+          <img src="logo.png" alt="Al Sadiq Trust" />
+          <div>
+            <strong>Masjid o Imam Bargah Al-Sadiq Trust</strong>
+            <span>G-9/2, Islamabad · Sunday, 25 October 2026</span>
+          </div>
+        </div>
+        <p class="kicker">Today’s meeting — a live look at the software</p>
+        <h2>How we will record money, donors and majalis</h2>
+        <p class="urdu">آج ہم یہ سافٹ ویئر آپ کو چلا کر دکھائیں گے</p>
+        <p class="lead">This is not a paper plan. After these slides we will open the real system on the computer and walk through it together.</p>
+        <img class="seal" src="logo.png" alt="" />
+      </article>
+
+      <article class="slide" data-slide>
+        <p class="kicker">In simple words</p>
+        <h2>What this software is for</h2>
+        <p class="urdu">یہ سافٹ ویئر کیا کام کرتا ہے؟</p>
+        <p class="lead">It takes the work that used to live in registers, Excel files and memory, and puts it in one place that the office and the trustees can all see.</p>
+        <ul class="pts">
+          <li>When someone gives money, a proper receipt is made at once</li>
+          <li>Every donor has one record — name, phone, membership number, city, and how much they have given</li>
+          <li>Upcoming majalis appear on a calendar, with both English and Islamic dates</li>
+          <li>A donor can sit at home, on a phone or a computer, and still see their own giving</li>
+        </ul>
+      </article>
+
+      <article class="slide" data-slide>
+        <p class="kicker">Two kinds of people use it</p>
+        <h2>Office staff, and donors</h2>
+        <p class="urdu">دفتر والے، اور معطین</p>
+        <div class="two">
+          <div class="card">
+            <div class="u">دفتری استعمال</div>
+            <h3>Office and volunteers</h3>
+            <p>They sign in at the desk. They record money, print receipts, look after the donor list, approve a majlis sponsorship, and send WhatsApp messages.</p>
+          </div>
+          <div class="card">
+            <div class="u">معطی کا استعمال</div>
+            <h3>Registered donors</h3>
+            <p>They sign in with their mobile number. They see their receipts, send a payment, look at the calendar, and offer to sponsor a gathering.</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" data-slide>
+        <p class="kicker">Office — taking money</p>
+        <h2>How the counter records a donation</h2>
+        <p class="urdu">کاؤنٹر پر عطیہ کیسے لکھا جاتا ہے</p>
+        <ol class="how">
+          <li>Open <b>Collect</b> (وصولی).</li>
+          <li>Type the donor’s mobile number. Their name appears. If they are new, type the name once.</li>
+          <li>Choose what the money is for: <b>Monthly Membership</b>, or <b>Others</b>, or both.</li>
+          <li>If you choose Others, a list opens. Pick one head, or more than one, and write the amount on each.</li>
+          <li>Tick the box if this person is a monthly member.</li>
+          <li>Save. A receipt number is given. Print it from the top of the next screen.</li>
+        </ol>
+      </article>
+
+      <article class="slide" data-slide>
+        <p class="kicker">Office — the donor list</p>
+        <h2>Every donor in one register</h2>
+        <p class="urdu">ہر معطی کا مکمل ریکارڈ</p>
+        <p class="lead">On the Donors screen you can search by name, phone or membership number. For each person we keep:</p>
+        <ul class="pts">
+          <li>Name and contact number</li>
+          <li>Membership number (the old AS-… number)</li>
+          <li>How much they have given so far</li>
+          <li>Profession, blood group, date of birth</li>
+          <li>City — chosen from a list, so spellings stay the same</li>
+        </ul>
+        <p class="lead">The old Excel register can be brought in from <b>Donors → Import Excel</b>, so nobody has to type hundreds of names by hand.</p>
+      </article>
+
+      <article class="slide" data-slide>
+        <p class="kicker">Office — receipts</p>
+        <h2>Print, send, or cancel — with a trail</h2>
+        <p class="urdu">رسید چھاپیں، بھیجیں، یا منسوخ کریں</p>
+        <ol class="how">
+          <li>Open the receipt. The <b>Print Receipt</b> button is at the top.</li>
+          <li>You can also send the same receipt to the donor on WhatsApp.</li>
+          <li>If a receipt was written by mistake, use <b>Void this receipt</b>. The line is not deleted. It stays, with the reason and the name of the person who cancelled it.</li>
+          <li>Only the Super Admin, or a person the Super Admin has allowed, can void a receipt. Ordinary staff cannot.</li>
+        </ol>
+      </article>
+
+      <article class="slide" data-slide>
+        <p class="kicker">Office — WhatsApp</p>
+        <h2>A message to many donors</h2>
+        <p class="urdu">بہت سے معطین کو پیغام</p>
+        <p class="lead">We do not yet have the official WhatsApp bulk service. Until then the office can still send a proper message, one donor at a time, without typing each number.</p>
+        <ol class="how">
+          <li>Open <b>WhatsApp</b> in the menu.</li>
+          <li>Write one message. Put the person’s name in automatically.</li>
+          <li>Choose who should receive it: everyone, monthly members, or members who have not given this month.</li>
+          <li>Press send. WhatsApp opens with that donor and the text already filled. You tap Send. Then the next donor.</li>
+        </ol>
+      </article>
+
+      <article class="slide" data-slide>
+        <p class="kicker">Office — majalis calendar</p>
+        <h2>English date and Islamic date together</h2>
+        <p class="urdu">ہجری اور عیسوی کیلنڈر</p>
+        <p class="lead">Staff and volunteers open <b>Calendar</b>. They see upcoming gatherings — Ayyam-e-Fatimiyya, milad, majalis from 1 Muharram to 8 Rabi al-Awwal, and any date you add.</p>
+        <ol class="how">
+          <li>A donor offers to sponsor a date, and writes how much they can give.</li>
+          <li>The office sees the request on the same calendar screen.</li>
+          <li>Approve or reject it.</li>
+          <li>Then send them a WhatsApp: approved or not, the gathering, the date, and the amount.</li>
+        </ol>
+      </article>
+
+      <article class="slide" data-slide>
+        <p class="kicker">Office — who may do what</p>
+        <h2>Five seats in the office</h2>
+        <p class="urdu">کون کیا کر سکتا ہے</p>
+        <p class="lead">Each seat has two buttons: <b>View</b> (look only) and <b>Edit</b> (change). More seats can be added later.</p>
+        <div class="two">
+          <div class="card"><h3>Super Admin</h3><p>Full control, including cancelling a receipt.</p></div>
+          <div class="card"><h3>Admin</h3><p>Runs the office day to day. Cannot cancel a receipt unless allowed.</p></div>
+          <div class="card"><h3>Accounts</h3><p>Sees every rupee. Does not change users.</p></div>
+          <div class="card"><h3>Manager</h3><p>Records collection for their team.</p></div>
+          <div class="card"><h3>Trustee</h3><p>Look only — for monitoring. Nothing can be changed by mistake.</p></div>
+          <div class="card"><h3>Assets</h3><p>Each item has a department and a person in charge — staff or a volunteer.</p></div>
+        </div>
+      </article>
+
+      <article class="slide" data-slide>
+        <p class="kicker">Donors — their own screen</p>
+        <h2>A donor can use a phone, a tablet, or a computer</h2>
+        <p class="urdu">معطی گھر سے بھی دیکھ سکتا ہے</p>
+        <p class="lead">They sign in with their mobile number and a PIN. The page is wide on a computer. On a phone there are four buttons at the bottom.</p>
+        <ul class="pts">
+          <li><b>Home</b> — their name, this month’s giving, lifetime total</li>
+          <li><b>Pay</b> — choose a head, write the amount, choose how they paid, attach a photo of the slip if they wish</li>
+          <li><b>Calendar</b> — upcoming majalis, English and Islamic dates</li>
+          <li><b>Ledger</b> — their own receipts, to look back</li>
+        </ul>
+      </article>
+
+      <article class="slide" data-slide>
+        <p class="kicker">Donors — pay and sponsor</p>
+        <h2>Giving from home, and booking a majlis</h2>
+        <p class="urdu">گھر سے عطیہ، اور مجلس کی سپانسرشپ</p>
+        <ol class="how">
+          <li>On <b>Pay</b> they pick the collection head and the amount. They do not fill bank names or slip numbers — that is office work.</li>
+          <li>They can attach a photo of the transfer. The office then checks it.</li>
+          <li>On <b>Calendar</b> they tap a gathering they wish to sponsor.</li>
+          <li>They write: “I can give this much.” The trust sees it, accepts or declines, and messages them on WhatsApp with the date and the amount.</li>
+        </ol>
+      </article>
+
+      <article class="slide" data-slide>
+        <p class="kicker">What we will do now</p>
+        <h2>We will open the live software</h2>
+        <p class="urdu">اب اصل سسٹم کھول کر دکھاتے ہیں</p>
+        <ol class="how">
+          <li>Record one donation at the counter — membership, then others.</li>
+          <li>Show a receipt at the top, and who is allowed to void it.</li>
+          <li>Open the donor list and the Excel import.</li>
+          <li>Open the calendar, then the donor’s own screen on a wide window.</li>
+        </ol>
+        <p class="lead">Please stop us at any step. If something is unclear, we will do it again slowly.</p>
+      </article>
+
+      <article class="slide cover" data-slide>
+        <div class="brand">
+          <img src="logo.png" alt="" />
+          <div>
+            <strong>Al Sadiq Trust</strong>
+            <span>May Allah accept what is given in His way</span>
+          </div>
+        </div>
+        <p class="kicker">Thank you</p>
+        <h2>Questions, then we look at the screen together</h2>
+        <p class="urdu">جزاکم اللہ خیراً — سوالات کا وقت</p>
+        <p class="lead">There is no hurry. We can go back to any slide, or open that part of the software and click it in front of you.</p>
+      </article>
+
+    </div>
+    <div class="bar">
+      <div>
+        <div id="count">1 / 13</div>
+        <div class="dots" id="dots"></div>
+      </div>
+      <div class="hint">Arrow keys or space · F for full screen</div>
+      <div class="navbtns">
+        <button class="nav prev" id="prev" type="button">Previous</button>
+        <button class="nav next" id="next" type="button">Next</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const slides = [...document.querySelectorAll("[data-slide]")];
+    const bar = document.getElementById("bar");
+    const count = document.getElementById("count");
+    const dots = document.getElementById("dots");
+    const prev = document.getElementById("prev");
+    const next = document.getElementById("next");
+    let i = 0;
+    slides.forEach((_, n) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.addEventListener("click", () => go(n));
+      dots.appendChild(b);
+    });
+    function go(n) {
+      i = Math.max(0, Math.min(slides.length - 1, n));
+      slides.forEach((s, k) => s.classList.toggle("on", k === i));
+      [...dots.children].forEach((d, k) => d.classList.toggle("on", k === i));
+      bar.style.width = ((i + 1) / slides.length) * 100 + "%";
+      count.textContent = (i + 1) + " / " + slides.length;
+      prev.disabled = i === 0;
+      next.disabled = i === slides.length - 1;
+      next.textContent = i === slides.length - 1 ? "Finish" : "Next";
+    }
+    prev.onclick = () => go(i - 1);
+    next.onclick = () => go(i + 1);
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { e.preventDefault(); go(i + 1); }
+      if (e.key === "ArrowLeft" || e.key === "PageUp" || e.key === "Backspace") { e.preventDefault(); go(i - 1); }
+      if (e.key === "Home") go(0);
+      if (e.key === "End") go(slides.length - 1);
+      if (e.key === "f" || e.key === "F") {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+      }
+    });
+    go(0);
+  </script>
+</body>
+</html>

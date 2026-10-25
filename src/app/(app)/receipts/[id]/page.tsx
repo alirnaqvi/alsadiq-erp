@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { donations, donors, heads, users } from "@/db/schema";
+import { donationLines, donations, donors, heads, users } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
-import { getSettings } from "@/lib/queries";
+import { getSettings, scopeCondition } from "@/lib/queries";
 import { appOrigin, ensureShareToken } from "@/lib/tokens";
 import {
   dateTime,
@@ -14,10 +14,11 @@ import {
   STATUS_LABELS,
   waNumber,
 } from "@/lib/format";
-import { Badge, Card, LinkButton, PageHeader } from "@/components/ui";
+import { Badge, Card, LinkButton, PageHeader, Table, Td, Th } from "@/components/ui";
 import ReceiptStrip from "@/components/ReceiptStrip";
 import NoteThread from "@/components/NoteThread";
 import ReceiptActions from "./ReceiptActions";
+import PrintReceiptButton from "@/components/PrintReceiptButton";
 import { alias } from "drizzle-orm/pg-core";
 
 export const dynamic = "force-dynamic";
@@ -27,12 +28,14 @@ export default async function ReceiptPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ new?: string }>;
+  searchParams: Promise<{ new?: string; count?: string }>;
 }) {
   const { id } = await params;
-  const { new: isNew } = await searchParams;
+  const { new: isNew, count } = await searchParams;
+  const extraCount = Number(count) || 0;
   const user = await requirePermission("collection.view");
   const settings = await getSettings();
+  const scope = await scopeCondition(user);
 
   const parentHead = alias(heads, "parent_head");
   const voider = alias(users, "voider");
@@ -62,6 +65,16 @@ export default async function ReceiptPage({
   const pdfUrl = `${origin}/r/${token}`;
 
   const extra = row.d.additionalNames || row.donor.additionalNames;
+  const lines = await db
+    .select({
+      amount: donationLines.amount,
+      headName: heads.name,
+      parentName: parentHead.name,
+    })
+    .from(donationLines)
+    .innerJoin(heads, eq(donationLines.headId, heads.id))
+    .leftJoin(parentHead, eq(heads.parentId, parentHead.id))
+    .where(eq(donationLines.donationId, row.d.id));
   const org = {
     name: settings.org_name || "Al Sadiq Trust",
     tagline: settings.org_tagline,
@@ -97,6 +110,30 @@ export default async function ReceiptPage({
       )}&body=${encodeURIComponent(receiptText.replace(/\*/g, ""))}`
     : null;
 
+  const history = await db
+    .select({
+      id: donations.id,
+      receiptNo: donations.receiptNo,
+      amount: donations.amount,
+      status: donations.status,
+      method: donations.paymentMethod,
+      receivedAt: donations.receivedAt,
+      headName: heads.name,
+    })
+    .from(donations)
+    .innerJoin(heads, eq(donations.headId, heads.id))
+    .where(and(eq(donations.donorId, row.donor.id), scope))
+    .orderBy(desc(donations.receivedAt))
+    .limit(8);
+
+  const [agg] = await db
+    .select({
+      total: sql<string>`coalesce(sum(${donations.amount}),0)`,
+      count: sql<number>`count(*)`,
+    })
+    .from(donations)
+    .where(and(eq(donations.donorId, row.donor.id), ne(donations.status, "void"), scope));
+
   return (
     <>
       <div className="no-print">
@@ -116,6 +153,7 @@ export default async function ReceiptPage({
             <>
               {row.d.status !== "void" && (
                 <>
+                  <PrintReceiptButton />
                   <LinkButton href={waLink} target="_blank" rel="noopener noreferrer">
                     Send PDF on WhatsApp
                   </LinkButton>
@@ -130,14 +168,24 @@ export default async function ReceiptPage({
         />
       </div>
 
+      <div className="no-print mb-5">
+        <ReceiptActions
+          id={row.d.id}
+          status={row.d.status}
+          canVoid={user.permissions.includes("collection.void")}
+          startNext={user.permissions.includes("collection.create")}
+        />
+      </div>
+
       {isNew && (
         <p className="no-print mb-5 rounded-md border border-sabz-700/25 bg-sabz-100 px-3 py-2 text-sm text-sabz-700">
-          Receipt {row.d.receiptNo} saved. Print it or send it on WhatsApp, then start the next
-          entry.
+          {extraCount > 1
+            ? `${extraCount} receipts saved for this collection. This is the first — print each one, or start the next entry.`
+            : `Receipt ${row.d.receiptNo} saved. Print it or send it on WhatsApp, then start the next entry.`}
         </p>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid items-start gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
         <div>
           <ReceiptStrip
             data={{
@@ -158,23 +206,21 @@ export default async function ReceiptPage({
               status: row.d.status,
               remarks: row.d.remarks,
               additionalNames: extra,
+              headLines: lines.map((l) => ({
+                name: l.headName,
+                parentName: l.parentName,
+                amount: Number(l.amount),
+              })),
             }}
           />
-          <div className="no-print mt-4 flex flex-col gap-2">
-            <ReceiptActions
-              id={row.d.id}
-              status={row.d.status}
-              canVoid={user.permissions.includes("collection.void")}
-              startNext={user.permissions.includes("collection.create")}
-            />
-          </div>
         </div>
 
-        <div className="no-print space-y-6">
-          <Card>
-            <h2 className="text-sm font-semibold text-ink-900">Details</h2>
-            <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2">
-              <Detail label="Status">
+        <div className="no-print space-y-5">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat label="Amount" value={`Rs ${money(row.d.amount)}`} />
+            <Stat
+              label="Status"
+              value={
                 <Badge
                   tone={
                     row.d.status === "void" ? "red" : row.d.status === "pending" ? "brass" : "green"
@@ -182,23 +228,48 @@ export default async function ReceiptPage({
                 >
                   {STATUS_LABELS[row.d.status]}
                 </Badge>
-              </Detail>
-              <Detail label="Amount">
-                <span className="tnum font-semibold">Rs {money(row.d.amount)}</span>
-              </Detail>
-              <Detail label="Donor">
-                <Link href={`/donors/${row.donor.id}`} className="text-sabz-700 hover:underline">
-                  {row.donor.fullName}
-                </Link>
-                <span className="code block text-xs text-ink-500">
+              }
+            />
+            <Stat label="Method" value={PAYMENT_LABELS[row.d.paymentMethod]} />
+            <Stat
+              label={row.d.isMembership ? "Membership" : "Source"}
+              value={
+                row.d.isMembership
+                  ? `Counted for ${row.d.membershipMonth}`
+                  : row.d.source === "donor_app"
+                    ? "Donor app"
+                    : "Counter"
+              }
+            />
+          </div>
+
+          <Card>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold text-ink-900">
+                  <Link href={`/donors/${row.donor.id}`} className="text-sabz-700 hover:underline">
+                    {row.donor.fullName}
+                  </Link>
+                </h2>
+                <p className="code mt-0.5 text-xs text-ink-500">
                   {row.donor.donorCode} · {row.donor.mobile}
+                </p>
+              </div>
+              <p className="text-sm text-ink-700">
+                <span className="tnum font-semibold">Rs {money(agg?.total)}</span>
+                <span className="text-ink-500">
+                  {" "}
+                  across {Number(agg?.count ?? 0)}{" "}
+                  {Number(agg?.count ?? 0) === 1 ? "receipt" : "receipts"}
                 </span>
-              </Detail>
+              </p>
+            </div>
+            <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
               <Detail label="Head">
                 {row.parentName ? `${row.parentName} / ` : ""}
                 {row.headName}
               </Detail>
-              <Detail label="Payment method">{PAYMENT_LABELS[row.d.paymentMethod]}</Detail>
+              {extra && <Detail label="Additional names">{extra}</Detail>}
               {row.d.chequeNo && <Detail label="Cheque number">{row.d.chequeNo}</Detail>}
               {row.d.bankName && <Detail label="Bank">{row.d.bankName}</Detail>}
               {row.d.slipRef && <Detail label="Reference">{row.d.slipRef}</Detail>}
@@ -214,11 +285,8 @@ export default async function ReceiptPage({
                   </a>
                 </Detail>
               )}
-              {row.d.isMembership && <Detail label="Membership">Counted for {row.d.membershipMonth}</Detail>}
               {row.d.remarks && <Detail label="Remarks">{row.d.remarks}</Detail>}
-              {extra && <Detail label="Additional names">{extra}</Detail>}
             </dl>
-
             {row.d.status === "void" && (
               <div className="mt-4 rounded-md border border-alert-700/20 bg-alert-100 p-3 text-sm text-alert-700">
                 <p className="font-medium">
@@ -229,12 +297,76 @@ export default async function ReceiptPage({
             )}
           </Card>
 
+          {history.length > 0 && (
+            <Card padded={false}>
+              <h2 className="px-4 pb-3 pt-4 text-sm font-semibold text-ink-900 sm:px-5 sm:pt-5">
+                This donor&apos;s receipts
+              </h2>
+              <Table>
+                <thead>
+                  <tr>
+                    <Th>Receipt</Th>
+                    <Th>Head</Th>
+                    <Th>Method</Th>
+                    <Th align="right">Amount</Th>
+                    <Th align="right">Date</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((h) => (
+                    <tr
+                      key={h.id}
+                      className={h.id === row.d.id ? "bg-sabz-100/50" : "hover:bg-paper/70"}
+                    >
+                      <Td>
+                        {h.id === row.d.id ? (
+                          <span className="code text-xs font-medium text-ink-900">{h.receiptNo}</span>
+                        ) : (
+                          <Link href={`/receipts/${h.id}`} className="code text-xs text-sabz-700">
+                            {h.receiptNo}
+                          </Link>
+                        )}
+                        {h.status !== "completed" && (
+                          <span className="ml-2">
+                            <Badge tone={h.status === "void" ? "red" : "brass"}>
+                              {h.status === "void" ? "Void" : "Pending"}
+                            </Badge>
+                          </span>
+                        )}
+                      </Td>
+                      <Td className="max-w-[12rem] truncate text-ink-500">{h.headName}</Td>
+                      <Td className="text-ink-500">{PAYMENT_LABELS[h.method]}</Td>
+                      <Td
+                        align="right"
+                        className={`tnum font-medium ${h.status === "void" ? "text-ink-300 line-through" : ""}`}
+                      >
+                        {money(h.amount)}
+                      </Td>
+                      <Td align="right" className="tnum whitespace-nowrap text-xs text-ink-500">
+                        {longDate(h.receivedAt)}
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </Card>
+          )}
+
           <Card>
             <NoteThread entityType="donation" entityId={row.d.id} />
           </Card>
         </div>
       </div>
     </>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-ink-100 bg-white p-4 shadow-[0_1px_2px_rgba(11,16,19,0.04)]">
+      <p className="eyebrow">{label}</p>
+      <div className="tnum mt-1 text-lg font-semibold text-ink-900">{value}</div>
+    </div>
   );
 }
 

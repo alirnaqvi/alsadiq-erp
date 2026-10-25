@@ -59,7 +59,19 @@ export async function getDonorSession(): Promise<DonorSession | null> {
     return null;
   }
 
-  const [row] = await db.select().from(donors).where(eq(donors.id, did)).limit(1);
+  const [row] = await db
+    .select({
+      id: donors.id,
+      donorCode: donors.donorCode,
+      fullName: donors.fullName,
+      mobile: donors.mobile,
+      email: donors.email,
+      additionalNames: donors.additionalNames,
+      isActive: donors.isActive,
+    })
+    .from(donors)
+    .where(eq(donors.id, did))
+    .limit(1);
   if (!row || !row.isActive) return null;
 
   return {

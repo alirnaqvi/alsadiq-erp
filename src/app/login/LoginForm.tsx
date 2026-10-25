@@ -4,27 +4,30 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { login, verifyLogin2fa, type LoginState } from "./actions";
 import { Button, Field, Input } from "@/components/ui";
+import { useT } from "@/components/LocaleProvider";
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
+  const t = useT();
   return (
     <Button type="submit" size="lg" className="mt-2 w-full" disabled={pending}>
-      {pending ? "Please wait…" : label}
+      {pending ? t("common.pleaseWait") : label}
     </Button>
   );
 }
 
 export default function LoginForm() {
+  const t = useT();
   const [state, formAction] = useActionState<LoginState, FormData>(login, {});
   const [twoFa, twoFaAction] = useActionState<LoginState, FormData>(verifyLogin2fa, {});
 
   if (state.need2fa || twoFa.need2fa) {
     return (
       <form action={twoFaAction} className="mt-8 space-y-4">
-        <p className="rounded-md border border-sabz-700/20 bg-sabz-100/60 px-3 py-2 text-sm text-ink-800">
-          Enter the 6-digit code from your authenticator app.
+        <p className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-foreground">
+          {t("login.twoFa")}
         </p>
-        <Field label="Authentication code" required>
+        <Field label={t("login.code")} required>
           <Input
             name="code"
             inputMode="numeric"
@@ -41,14 +44,14 @@ export default function LoginForm() {
             {twoFa.error || state.error}
           </p>
         )}
-        <SubmitButton label="Verify and sign in" />
+        <SubmitButton label={t("login.verify")} />
       </form>
     );
   }
 
   return (
     <form action={formAction} className="mt-8 space-y-4">
-      <Field label="Username" required>
+      <Field label={t("login.username")} required>
         <Input
           name="username"
           autoComplete="username"
@@ -59,7 +62,7 @@ export default function LoginForm() {
         />
       </Field>
 
-      <Field label="Password" required>
+      <Field label={t("login.password")} required>
         <Input name="password" type="password" autoComplete="current-password" required />
       </Field>
 
@@ -72,7 +75,7 @@ export default function LoginForm() {
         </p>
       )}
 
-      <SubmitButton label="Sign in" />
+      <SubmitButton label={t("common.signIn")} />
     </form>
   );
 }

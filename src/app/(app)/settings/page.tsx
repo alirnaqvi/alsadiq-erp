@@ -4,6 +4,8 @@ import { getSettings } from "@/lib/queries";
 import { appOrigin } from "@/lib/tokens";
 import { db } from "@/db";
 import { users } from "@/db/schema";
+import { tx } from "@/lib/i18n";
+import { getLocale } from "@/lib/locale";
 import { PageHeader, Card } from "@/components/ui";
 import SettingsForm from "./SettingsForm";
 import TwoFactorCard from "./TwoFactorCard";
@@ -13,6 +15,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const user = await requirePermission("settings.manage");
+  const t = tx(await getLocale());
   const me = await requireUser();
   const settings = await getSettings();
   const origin = await appOrigin();
@@ -27,9 +30,9 @@ export default async function SettingsPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Setup"
-        title="Trust settings"
-        subtitle="These details print at the top and bottom of every receipt."
+        eyebrow={t("group.setup")}
+        title={t("pages.settings.title")}
+        subtitle={t("pages.settings.subtitle")}
       />
       <div className="space-y-6">
         <SettingsForm settings={settings} />

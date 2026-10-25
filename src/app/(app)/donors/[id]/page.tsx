@@ -198,6 +198,9 @@ export default async function DonorPage({ params }: { params: Promise<{ id: stri
               {canSeeConfidential && donor.cnic && <Row label="CNIC" value={donor.cnic} mono />}
               {canSeeConfidential && donor.email && <Row label="Email" value={donor.email} />}
               {donor.city && <Row label="City" value={donor.city} />}
+              {donor.profession && <Row label="Profession" value={donor.profession} />}
+              {donor.bloodGroup && <Row label="Blood group" value={donor.bloodGroup} />}
+              {donor.dateOfBirth && <Row label="Date of birth" value={donor.dateOfBirth} />}
               {canSeeConfidential && donor.address && <Row label="Address" value={donor.address} />}
               {canSeeConfidential && donor.notes && <Row label="Notes" value={donor.notes} />}
               {!canSeeConfidential && (

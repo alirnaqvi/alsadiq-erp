@@ -2,6 +2,8 @@ import { desc } from "drizzle-orm";
 import { db } from "@/db";
 import { inventoryItems } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
+import { tx } from "@/lib/i18n";
+import { getLocale } from "@/lib/locale";
 import { Badge, Card, EmptyState, PageHeader, Table, Td, Th } from "@/components/ui";
 import { NewItemForm, MoveForm } from "./InventoryForms";
 
@@ -9,14 +11,15 @@ export const dynamic = "force-dynamic";
 
 export default async function InventoryPage() {
   await requirePermission("inventory.manage");
+  const t = tx(await getLocale());
   const rows = await db.select().from(inventoryItems).orderBy(desc(inventoryItems.createdAt));
 
   return (
     <>
       <PageHeader
-        eyebrow="Store"
-        title="Inventory"
-        subtitle="Consumables and stock the trust issues for majalis, langar and office use."
+        eyebrow={t("pages.assets.eyebrow")}
+        title={t("pages.inventory.title")}
+        subtitle={t("pages.inventory.subtitle")}
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <Card padded={false}>

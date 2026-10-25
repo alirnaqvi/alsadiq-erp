@@ -3,6 +3,8 @@ import { db } from "@/db";
 import { roles } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
 import { PERMISSIONS, PERMISSION_GROUPS, SCOPE_LABEL } from "@/lib/permissions";
+import { tx } from "@/lib/i18n";
+import { getLocale } from "@/lib/locale";
 import { PageHeader } from "@/components/ui";
 import RoleAdmin from "./RoleAdmin";
 
@@ -10,6 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function RolesPage() {
   await requirePermission("role.manage");
+  const t = tx(await getLocale());
 
   const rows = await db
     .select({
@@ -29,9 +32,9 @@ export default async function RolesPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Setup"
-        title="Roles and permissions"
-        subtitle="A role is a set of permissions plus how much collection data its holders can see."
+        eyebrow={t("group.setup")}
+        title={t("pages.roles.title")}
+        subtitle={t("pages.roles.subtitle")}
       />
       <RoleAdmin
         roles={rows}

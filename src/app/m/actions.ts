@@ -45,16 +45,16 @@ export async function submitDonorPayment(_prev: PayState, formData: FormData): P
   const headId = Number(formData.get("headId"));
   const amount = Number(formData.get("amount"));
   const method = String(formData.get("paymentMethod") ?? "bank_transfer");
-  const slipRef = String(formData.get("slipRef") ?? "").trim();
-  const bankName = String(formData.get("bankName") ?? "").trim();
+  const slipRef = "";
+  const bankName = "";
   const slipUrl = String(formData.get("slipUrl") ?? "").trim();
   const additionalNames = String(formData.get("additionalNames") ?? "").trim();
   const remarks = String(formData.get("remarks") ?? "").trim();
 
   if (!headId) return { error: "Choose a collection head." };
   if (!Number.isFinite(amount) || amount <= 0) return { error: "Enter an amount greater than zero." };
-  if (method !== "cash" && !slipUrl && !slipRef) {
-    return { error: "Attach a payment proof or enter the transfer reference." };
+  if (method !== "cash" && !slipUrl) {
+    return { error: "Please attach a photo of the transfer so accounts can confirm it." };
   }
 
   const [head] = await db.select().from(heads).where(eq(heads.id, headId)).limit(1);

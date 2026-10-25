@@ -51,7 +51,7 @@ export default function HeadForm({ parents }: { parents: { id: number; name: str
             name="isEvent"
             checked={isEvent}
             onChange={(e) => setIsEvent(e.target.checked)}
-            className="size-4 accent-[#0c4a3e]"
+            className="size-4 accent-primary"
           />
           This is a dated occasion
         </label>

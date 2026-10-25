@@ -5,6 +5,8 @@ import { donations, donors, heads, users } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
 import { scopeCondition, selectableHeads } from "@/lib/queries";
 import { money, dateTime, PAYMENT_LABELS, ymd } from "@/lib/format";
+import { tx } from "@/lib/i18n";
+import { getLocale } from "@/lib/locale";
 import {
   Badge,
   Card,
@@ -37,6 +39,7 @@ export default async function ReceiptsPage({
 }) {
   const sp = await searchParams;
   const user = await requirePermission("collection.view");
+  const t = tx(await getLocale());
   const scope = await scopeCondition(user);
   const headOptions = await selectableHeads();
 
@@ -109,9 +112,12 @@ export default async function ReceiptsPage({
   return (
     <>
       <PageHeader
-        eyebrow="Collection"
-        title="Receipts"
-        subtitle={`${Number(totals?.count ?? 0)} receipts · Rs ${money(totals?.total)} excluding voids`}
+        eyebrow={t("receipts.eyebrow")}
+        title={t("receipts.title")}
+        subtitle={t("receipts.subtitle", {
+          n: Number(totals?.count ?? 0),
+          amount: money(totals?.total),
+        })}
         actions={
           user.permissions.includes("report.view") && (
             <LinkButton
@@ -120,7 +126,7 @@ export default async function ReceiptsPage({
               ).toString()}`}
               variant="secondary"
             >
-              Download Excel
+              {t("common.downloadExcel")}
             </LinkButton>
           )
         }
@@ -129,17 +135,17 @@ export default async function ReceiptsPage({
       <Card className="mb-5">
         <form className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <label className="block">
-            <span className="eyebrow mb-1 block">From</span>
+            <span className="eyebrow mb-1 block">{t("common.from")}</span>
             <input type="date" name="from" defaultValue={from} className={inputClass} />
           </label>
           <label className="block">
-            <span className="eyebrow mb-1 block">To</span>
+            <span className="eyebrow mb-1 block">{t("common.to")}</span>
             <input type="date" name="to" defaultValue={to} className={inputClass} />
           </label>
           <label className="block">
-            <span className="eyebrow mb-1 block">Head</span>
+            <span className="eyebrow mb-1 block">{t("receipts.head")}</span>
             <select name="head" defaultValue={sp.head ?? ""} className={inputClass}>
-              <option value="">All heads</option>
+              <option value="">{t("receipts.allHeads")}</option>
               {headOptions.map((h) => (
                 <option key={h.id} value={h.id}>
                   {h.parentName ? `${h.parentName} — ` : ""}
@@ -149,20 +155,20 @@ export default async function ReceiptsPage({
             </select>
           </label>
           <label className="block">
-            <span className="eyebrow mb-1 block">Status</span>
+            <span className="eyebrow mb-1 block">{t("receipts.status")}</span>
             <select name="status" defaultValue={sp.status ?? ""} className={inputClass}>
-              <option value="">Any status</option>
-              <option value="completed">Received</option>
-              <option value="pending">Pending clearance</option>
-              <option value="void">Voided</option>
+              <option value="">{t("receipts.anyStatus")}</option>
+              <option value="completed">{t("receipts.received")}</option>
+              <option value="pending">{t("receipts.pending")}</option>
+              <option value="void">{t("receipts.voided")}</option>
             </select>
           </label>
           <label className="block">
-            <span className="eyebrow mb-1 block">Search</span>
+            <span className="eyebrow mb-1 block">{t("common.search")}</span>
             <input
               name="q"
               defaultValue={sp.q ?? ""}
-              placeholder="Receipt, name or mobile"
+              placeholder={t("receipts.searchPh")}
               className={inputClass}
             />
           </label>
@@ -171,16 +177,16 @@ export default async function ReceiptsPage({
               type="submit"
               className="h-10 rounded-md bg-sabz-700 px-4 text-sm font-medium text-white hover:bg-sabz-600"
             >
-              Apply filters
+              {t("common.applyFilters")}
             </button>
             <Link href="/receipts" className="text-sm text-ink-500 underline underline-offset-4">
-              Clear
+              {t("common.clear")}
             </Link>
             <Link
               href={qs({ from: ymd(), to: ymd(), page: "1" })}
-              className="ml-auto text-sm text-sabz-700 underline underline-offset-4"
+              className="ms-auto text-sm text-sabz-700 underline underline-offset-4"
             >
-              Today only
+              {t("common.todayOnly")}
             </Link>
           </div>
         </form>
@@ -196,13 +202,13 @@ export default async function ReceiptsPage({
           <Table>
             <thead>
               <tr>
-                <Th>Receipt</Th>
-                <Th>Donor</Th>
-                <Th>Head</Th>
-                <Th>Method</Th>
-                <Th>Collected by</Th>
-                <Th align="right">Amount</Th>
-                <Th align="right">Date</Th>
+                <Th>{t("dash.colReceipt")}</Th>
+                <Th>{t("dash.colDonor")}</Th>
+                <Th>{t("dash.colHead")}</Th>
+                <Th>{t("receipts.colMethod")}</Th>
+                <Th>{t("receipts.colCollector")}</Th>
+                <Th align="right">{t("dash.colAmount")}</Th>
+                <Th align="right">{t("receipts.colDate")}</Th>
               </tr>
             </thead>
             <tbody>

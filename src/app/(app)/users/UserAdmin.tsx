@@ -41,6 +41,7 @@ export default function UserAdmin({
   currentUserId: number;
 }) {
   const [editing, setEditing] = useState<U | null>(null);
+  const [viewing, setViewing] = useState<U | null>(null);
   const [state, formAction] = useActionState<UserState, FormData>(saveUser, {});
   const [resetState, resetAction] = useActionState<UserState, FormData>(resetPassword, {});
 
@@ -70,7 +71,24 @@ export default function UserAdmin({
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={() => setEditing(u)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setViewing(u);
+              setEditing(null);
+            }}
+          >
+            View
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setEditing(u);
+              setViewing(null);
+            }}
+          >
             Edit
           </Button>
           <form action={resetAction}>
@@ -118,6 +136,41 @@ export default function UserAdmin({
       </div>
 
       <div className="lg:sticky lg:top-10 lg:self-start">
+        {viewing && !editing && (
+          <Card className="mb-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-ink-900">View {viewing.fullName}</h2>
+              <Button variant="ghost" size="sm" onClick={() => setViewing(null)}>
+                Close
+              </Button>
+            </div>
+            <dl className="space-y-2 text-sm">
+              <div>
+                <dt className="eyebrow">Username</dt>
+                <dd className="code">{viewing.username}</dd>
+              </div>
+              <div>
+                <dt className="eyebrow">Role</dt>
+                <dd>{viewing.roleName}</dd>
+              </div>
+              <div>
+                <dt className="eyebrow">Posted at</dt>
+                <dd>{viewing.postedAt || "—"}</dd>
+              </div>
+              <div>
+                <dt className="eyebrow">Mobile</dt>
+                <dd>{viewing.mobile || "—"}</dd>
+              </div>
+              <div>
+                <dt className="eyebrow">Status</dt>
+                <dd>{viewing.isActive ? "Active" : "Deactivated"}</dd>
+              </div>
+            </dl>
+            <Button className="mt-4" size="sm" onClick={() => { setEditing(viewing); setViewing(null); }}>
+              Edit this user
+            </Button>
+          </Card>
+        )}
         <Card>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-ink-900">

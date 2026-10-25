@@ -4,6 +4,8 @@ import { db } from "@/db";
 import { donors } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
 import { money, longDate } from "@/lib/format";
+import { tx } from "@/lib/i18n";
+import { getLocale } from "@/lib/locale";
 import {
   Badge,
   Card,
@@ -27,6 +29,7 @@ export default async function DonorsPage({
 }) {
   const sp = await searchParams;
   const user = await requirePermission("donor.view");
+  const t = tx(await getLocale());
   const q = sp.q?.trim() ?? "";
   const page = Math.max(1, Number(sp.page ?? 1));
 
@@ -79,15 +82,24 @@ export default async function DonorsPage({
   return (
     <>
       <PageHeader
-        eyebrow="Donors"
-        title="Donor register"
-        subtitle={`${Number(count?.n ?? 0)} donors${q ? " matching your search" : ""}`}
+        eyebrow={t("pages.donors.eyebrow")}
+        title={t("pages.donors.title")}
+        subtitle={
+          q
+            ? t("pages.donors.matching", { n: Number(count?.n ?? 0) })
+            : t("pages.donors.subtitle", { n: Number(count?.n ?? 0) })
+        }
         actions={
-          user.permissions.includes("donor.create") && (
-            <LinkButton href="/donors/new" variant="primary">
-              Register a donor
-            </LinkButton>
-          )
+          <>
+            {(user.permissions.includes("donor.import") || user.permissions.includes("donor.create")) && (
+              <LinkButton href="/donors/import">Import Excel</LinkButton>
+            )}
+            {user.permissions.includes("donor.create") && (
+              <LinkButton href="/donors/new" variant="primary">
+                {t("pages.donorsNew.title")}
+              </LinkButton>
+            )}
+          </>
         }
       />
 

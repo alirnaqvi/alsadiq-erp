@@ -3,6 +3,8 @@ import { db } from "@/db";
 import { heads, donations } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
 import { money, longDate } from "@/lib/format";
+import { tx } from "@/lib/i18n";
+import { getLocale } from "@/lib/locale";
 import { Badge, Card, PageHeader, Button } from "@/components/ui";
 import { toggleHead } from "./actions";
 import HeadForm from "./HeadForm";
@@ -11,6 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HeadsPage() {
   await requirePermission("head.manage");
+  const t = tx(await getLocale());
 
   const rows = await db.select().from(heads).orderBy(asc(heads.sortOrder), asc(heads.name));
 
@@ -31,9 +34,9 @@ export default async function HeadsPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Setup"
-        title="Collection heads"
-        subtitle="What money can be collected against. Subheads sit under a head; only subheads appear at the counter."
+        eyebrow={t("group.setup")}
+        title={t("pages.heads.title")}
+        subtitle={t("pages.heads.subtitle")}
       />
 
       <div className="mb-6 rounded-md border border-brass-600/30 bg-brass-100/60 px-4 py-3 text-sm text-ink-800">

@@ -1,8 +1,10 @@
 import { desc } from "drizzle-orm";
 import { db } from "@/db";
-import { assets } from "@/db/schema";
+import { assets, users } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
 import { money } from "@/lib/format";
+import { tx } from "@/lib/i18n";
+import { getLocale } from "@/lib/locale";
 import { Badge, Card, EmptyState, PageHeader, Table, Td, Th } from "@/components/ui";
 import AssetForm from "./AssetForm";
 
@@ -17,14 +19,19 @@ const STATUS: Record<string, { label: string; tone: "green" | "brass" | "red" | 
 
 export default async function AssetsPage() {
   await requirePermission("asset.manage");
+  const t = tx(await getLocale());
   const rows = await db.select().from(assets).orderBy(desc(assets.createdAt));
+  const staff = await db
+    .select({ id: users.id, fullName: users.fullName })
+    .from(users)
+    .orderBy(users.fullName);
 
   return (
     <>
       <PageHeader
-        eyebrow="Store"
-        title="Assets"
-        subtitle="Physical items the trust owns — sound gear, furniture, vehicles, kitchen equipment."
+        eyebrow={t("pages.assets.eyebrow")}
+        title={t("pages.assets.title")}
+        subtitle={t("pages.assets.subtitle")}
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <Card padded={false}>
@@ -39,6 +46,7 @@ export default async function AssetsPage() {
                   <Th>Code</Th>
                   <Th>Name</Th>
                   <Th>Location</Th>
+                  <Th>Incharge</Th>
                   <Th>Status</Th>
                   <Th align="right">Value</Th>
                 </tr>
@@ -53,7 +61,11 @@ export default async function AssetsPage() {
                         <p className="font-medium">{r.name}</p>
                         <p className="text-xs text-ink-500">{r.category || "—"}</p>
                       </Td>
-                      <Td className="text-ink-500">{r.location || "—"}</Td>
+                      <Td className="text-ink-500">
+                        <p>{r.location || "—"}</p>
+                        {r.department && <p className="text-xs">{r.department}</p>}
+                      </Td>
+                      <Td className="text-ink-500">{r.inchargeName || "—"}</Td>
                       <Td>
                         <Badge tone={s.tone}>{s.label}</Badge>
                       </Td>
@@ -67,7 +79,7 @@ export default async function AssetsPage() {
             </Table>
           )}
         </Card>
-        <AssetForm />
+        <AssetForm staff={staff} />
       </div>
     </>
   );

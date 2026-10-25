@@ -4,6 +4,8 @@ import { donations, donors, heads } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
 import { selectableHeads, getSettings, startOfPkToday } from "@/lib/queries";
 import { hijri, longDate, money, timeOnly } from "@/lib/format";
+import { tx } from "@/lib/i18n";
+import { getLocale } from "@/lib/locale";
 import { PageHeader, Card } from "@/components/ui";
 import CollectForm from "./CollectForm";
 
@@ -16,6 +18,7 @@ export default async function CollectPage({
 }) {
   const { donor: prefill } = await searchParams;
   const user = await requirePermission("collection.create");
+  const t = tx(await getLocale());
   const [headOptions, settings] = await Promise.all([selectableHeads(), getSettings()]);
 
   const mine = await db
@@ -45,19 +48,20 @@ export default async function CollectPage({
     <>
       <PageHeader
         eyebrow={`${longDate(new Date())} · ${hijri(new Date())}`}
-        title="Collection counter"
-        subtitle="Start with the mobile number. Everything else follows from it."
+        title={t("collect.title")}
+        subtitle={t("collect.subtitle")}
       />
 
       <CollectForm
         heads={headOptions}
+        membershipHead={headOptions.find((h) => h.code === "MEM-MON") ?? null}
         org={{
           name: settings.org_name || "Al Sadiq Trust",
           tagline: settings.org_tagline || "",
           address: settings.org_address || "",
           phone: settings.org_phone || "",
           footer: settings.receipt_footer || "",
-          logo: settings.org_logo || "",
+          logo: settings.org_logo || "/logo.png",
         }}
         collector={user.fullName}
         initialTerm={prefill ?? ""}
@@ -65,14 +69,14 @@ export default async function CollectPage({
 
       <Card className="mt-6">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-sm font-semibold text-ink-900">Your entries today</h2>
-          <p className="tnum text-sm text-ink-500">
-            {mine.length} receipts · Rs {money(todayTotal)}
+          <h2 className="font-display text-xl font-bold text-primary">{t("collect.todayEntries")}</h2>
+          <p className="tnum text-sm text-muted-foreground">
+            {t("collect.receiptsN", { n: mine.length, amount: money(todayTotal) })}
           </p>
         </div>
         {mine.length === 0 ? (
           <p className="mt-3 text-sm text-ink-500">
-            Nothing yet today. The first receipt you write will show here.
+            {t("collect.nothingToday")}
           </p>
         ) : (
           <ul className="mt-3 divide-y divide-ink-100 text-sm">

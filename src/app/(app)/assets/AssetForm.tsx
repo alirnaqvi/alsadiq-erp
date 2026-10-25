@@ -14,7 +14,24 @@ function Save() {
   );
 }
 
-export default function AssetForm() {
+const DEPARTMENTS = [
+  "Imambargah",
+  "Masjid",
+  "Kitchen / Langar",
+  "Sound & lighting",
+  "Admin office",
+  "Accounts",
+  "Security",
+  "Transport",
+  "Store",
+  "Other",
+];
+
+export default function AssetForm({
+  staff,
+}: {
+  staff: { id: number; fullName: string }[];
+}) {
   const [state, action] = useActionState<AssetState, FormData>(saveAsset, {});
   return (
     <form action={action}>
@@ -29,6 +46,29 @@ export default function AssetForm() {
           </Field>
           <Field label="Location">
             <Input name="location" placeholder="Main imambargah" />
+          </Field>
+          <Field label="Department using it">
+            <Select name="department" defaultValue="">
+              <option value="">Choose…</option>
+              {DEPARTMENTS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Incharge (staff)">
+            <Select name="inchargeUserId" defaultValue="">
+              <option value="">Unassigned</option>
+              {staff.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.fullName}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Incharge name" hint="If they are not a system user.">
+            <Input name="inchargeName" placeholder="Volunteer name" />
           </Field>
           <Field label="Serial no.">
             <Input name="serialNo" />

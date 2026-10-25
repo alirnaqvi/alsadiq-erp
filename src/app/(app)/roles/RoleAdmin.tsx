@@ -40,6 +40,7 @@ export default function RoleAdmin({
   scopeLabels: Record<string, string>;
 }) {
   const [editing, setEditing] = useState<Role | null>(null);
+  const [viewing, setViewing] = useState<Role | null>(null);
   const [state, formAction] = useActionState<RoleState, FormData>(saveRole, {});
 
   return (
@@ -59,7 +60,24 @@ export default function RoleAdmin({
                 </p>
               </div>
               <div className="flex gap-1">
-                <Button variant="ghost" size="sm" onClick={() => setEditing(r)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setViewing(r);
+                    setEditing(null);
+                  }}
+                >
+                  View
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditing(r);
+                    setViewing(null);
+                  }}
+                >
                   Edit
                 </Button>
                 {!r.isSystem && r.holders === 0 && (
@@ -93,6 +111,30 @@ export default function RoleAdmin({
       </div>
 
       <div className="lg:sticky lg:top-10 lg:self-start">
+        {viewing && !editing && (
+          <Card className="mb-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-ink-900">View {viewing.name}</h2>
+              <Button variant="ghost" size="sm" onClick={() => setViewing(null)}>
+                Close
+              </Button>
+            </div>
+            <p className="text-sm text-ink-700">{viewing.description || "No description."}</p>
+            <p className="mt-2 text-xs text-ink-500">
+              Sees: {scopeLabels[viewing.dataScope]} · {viewing.holders} {viewing.holders === 1 ? "person" : "people"}
+            </p>
+            <ul className="mt-3 space-y-1 text-sm">
+              {permissions
+                .filter((p) => viewing.permissions.includes(p.key))
+                .map((p) => (
+                  <li key={p.key}>{p.label}</li>
+                ))}
+            </ul>
+            <Button className="mt-4" size="sm" onClick={() => { setEditing(viewing); setViewing(null); }}>
+              Edit this role
+            </Button>
+          </Card>
+        )}
         <Card>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-ink-900">
@@ -147,7 +189,7 @@ export default function RoleAdmin({
                               name="permissions"
                               value={p.key}
                               defaultChecked={editing?.permissions.includes(p.key)}
-                              className="size-4 accent-[#0c4a3e]"
+                              className="size-4 accent-primary"
                             />
                             {p.label}
                           </label>

@@ -20,10 +20,10 @@ export default function JoinForm() {
 
   if (state.ok) {
     return (
-      <div className="rounded-lg border border-sabz-700/25 bg-sabz-100/70 p-5 text-sm text-ink-800">
-        <p className="font-medium text-sabz-700">Request received</p>
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 text-sm text-foreground">
+        <p className="font-display text-lg font-bold text-primary">Request received</p>
         <p className="mt-2">{state.ok}</p>
-        <Link href="/m/login" className="mt-4 inline-block text-sabz-700 underline underline-offset-4">
+        <Link href="/m/login" className="mt-4 inline-block font-semibold text-primary underline underline-offset-4">
           Go to donor sign-in
         </Link>
       </div>

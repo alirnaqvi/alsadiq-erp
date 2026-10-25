@@ -2,8 +2,9 @@
 import bcrypt from "bcryptjs";
 import { sql } from "drizzle-orm";
 import { db } from "./index";
-import { roles, users, heads, donors, donations, pledges, settings, counters } from "./schema";
+import { roles, users, heads, donors, donations, pledges, settings, counters, gatherings } from "./schema";
 import { ALL_PERMISSIONS } from "../lib/permissions";
+import { upcomingHijriDates, hijriMonthName, ymd } from "../lib/format";
 
 const withDemo = process.argv.includes("--demo");
 
@@ -15,91 +16,69 @@ const ROLE_DEFS = [
     name: "Super Admin",
     level: 1,
     dataScope: "all" as const,
-    description: "Every permission in the system, including users, roles, confidential data and setup.",
+    description: "Full control: users, roles, voiding receipts, confidential donor data and setup.",
     permissions: ALL_PERMISSIONS,
   },
   {
-    key: "limited",
-    name: "Limited Access",
-    level: 22,
+    key: "office_admin",
+    name: "Admin",
+    level: 8,
     dataScope: "all" as const,
-    description:
-      "Day-to-day collection view without confidential donor data (no CNIC, email, address or audit trail).",
+    description: "Runs the office day to day. Cannot void receipts or change roles unless Super Admin designates that.",
+    permissions: ALL_PERMISSIONS.filter((p) => p !== "collection.void" && p !== "role.manage"),
+  },
+  {
+    key: "accounts",
+    name: "Accounts",
+    level: 12,
+    dataScope: "all" as const,
+    description: "Sees every rupee and export. Does not void receipts or change users.",
     permissions: [
       "collection.view",
       "donor.view",
+      "donor.confidential",
       "member.manage",
       "report.view",
+      "audit.view",
+      "sponsorship.review",
     ],
   },
   {
-    key: "collector",
-    name: "Collector",
-    level: 30,
-    dataScope: "own" as const,
-    description: "Can only record new payments and register new donors at the counter.",
-    permissions: ["collection.create", "collection.view", "donor.create", "donor.view"],
-  },
-  {
     key: "manager",
-    name: "Area Manager",
-    level: 20,
+    name: "Manager",
+    level: 16,
     dataScope: "team" as const,
-    description:
-      "Runs a collection area. Sees everything their team collects, can correct entries and run reports.",
+    description: "Records collection for their team, registers donors, runs reports. Cannot void a receipt.",
     permissions: [
       "collection.create",
       "collection.view",
-      "collection.void",
       "donor.create",
       "donor.edit",
       "donor.view",
       "donor.confidential",
       "donor.verify",
+      "donor.import",
       "member.manage",
       "whatsapp.send",
+      "event.manage",
+      "sponsorship.review",
       "report.view",
     ],
   },
   {
-    key: "operator",
-    name: "Data Entry Operator",
-    level: 32,
-    dataScope: "own" as const,
-    description: "Sits at the counter. Registers donors and records what they receive.",
-    permissions: ["collection.create", "collection.view", "donor.create", "donor.view"],
-  },
-  {
-    key: "auditor",
-    name: "Auditor",
-    level: 25,
+    key: "trustee",
+    name: "Trustee (Monitoring)",
+    level: 10,
     dataScope: "all" as const,
-    description: "Read-only oversight across the whole trust, including the audit trail.",
-    permissions: ["collection.view", "donor.view", "donor.confidential", "report.view", "audit.view"],
-  },
-  {
-    key: "verifier",
-    name: "Registration Officer",
-    level: 24,
-    dataScope: "all" as const,
-    description: "Reviews donor-app sign-up requests and decides whether to admit them.",
-    permissions: ["donor.view", "donor.confidential", "donor.verify", "donor.create"],
-  },
-  {
-    key: "storekeeper",
-    name: "Storekeeper",
-    level: 28,
-    dataScope: "own" as const,
-    description: "Looks after trust assets and inventory in/out. No access to donor records.",
-    permissions: ["asset.manage", "inventory.manage"],
-  },
-  {
-    key: "messenger",
-    name: "Outreach",
-    level: 26,
-    dataScope: "all" as const,
-    description: "Sends bulk WhatsApp reminders and receipts. Cannot see CNIC or addresses.",
-    permissions: ["whatsapp.send", "donor.view", "member.manage", "collection.view"],
+    description: "Read-only monitoring for trustees. No recording, no voiding, no setup changes.",
+    permissions: [
+      "collection.view",
+      "donor.view",
+      "donor.confidential",
+      "report.view",
+      "audit.view",
+      "sponsorship.review",
+    ],
   },
 ];
 
@@ -272,31 +251,31 @@ async function main() {
       .insert(users)
       .values([
         {
-          username: "counter1",
-          fullName: "Mohammad Naqi",
-          roleId: roleId("operator"),
+          username: "office",
+          fullName: "Office Admin",
+          roleId: roleId("office_admin"),
           passwordHash: hash,
           mobile: "03021234567",
-          managerId: mgrId,
-          postedAt: "Counter 1",
+          managerId: admin.id,
+          postedAt: "Head office",
         },
         {
-          username: "counter2",
-          fullName: "Ali Akbar",
-          roleId: roleId("operator"),
+          username: "accounts",
+          fullName: "Accounts Desk",
+          roleId: roleId("accounts"),
           passwordHash: hash,
           mobile: "03031234567",
-          managerId: mgrId,
-          postedAt: "Counter 2",
+          managerId: admin.id,
+          postedAt: "Accounts",
         },
         {
-          username: "auditor",
-          fullName: "Hasan Mehdi",
-          roleId: roleId("auditor"),
+          username: "trustee",
+          fullName: "Trustee Monitor",
+          roleId: roleId("trustee"),
           passwordHash: hash,
           mobile: "03041234567",
           managerId: admin.id,
-          postedAt: "Head office",
+          postedAt: "Board",
         },
       ])
       .onConflictDoNothing();
@@ -353,8 +332,8 @@ async function main() {
   if (withDemo) {
     const existing = await db.select({ id: donors.id }).from(donors).limit(1);
     if (existing.length === 0) {
-      const operators = userRows.filter((u) => u.username.startsWith("counter"));
-      const collectors = operators.length ? operators : [admin];
+      const collectors = userRows.filter((u) => u.username === "manager" || u.username === "office");
+      const team = collectors.length ? collectors : [admin];
       const leafHeads = headRows.filter((h) => h.parentId !== null);
 
       let donorSeq = 0;
@@ -411,7 +390,7 @@ async function main() {
             bankName: method === "cheque" || method === "bank_transfer" ? "Meezan Bank" : null,
             slipRef: method === "bank_transfer" ? `TRX${500000 + receiptSeq}` : null,
             receivedAt: when,
-            collectedById: collectors[receiptSeq % collectors.length].id,
+            collectedById: team[receiptSeq % team.length].id,
           });
         }
       }
@@ -435,6 +414,59 @@ async function main() {
       );
 
       console.log(`  demo donors: ${donorIds.length}, receipts: ${rows.length}, members: 12`);
+    }
+  }
+
+  /* gatherings for the coming Hijri season */
+  const existingGatherings = await db.select({ id: gatherings.id }).from(gatherings).limit(1);
+  if (existingGatherings.length === 0) {
+    const templates: { month: number; day: number; title: string; titleUr: string; kind: string; amount: number; note: string }[] = [
+      { month: 1, day: 1, title: "1st Muharram majlis", titleUr: "یکم محرم مجلس", kind: "majlis", amount: 25000, note: "Opening of azadari." },
+      { month: 1, day: 2, title: "2nd Muharram majlis", titleUr: "دوم محرم مجلس", kind: "majlis", amount: 25000, note: "" },
+      { month: 1, day: 3, title: "3rd Muharram majlis", titleUr: "سوم محرم مجلس", kind: "majlis", amount: 25000, note: "" },
+      { month: 1, day: 4, title: "4th Muharram majlis", titleUr: "چہارم محرم مجلس", kind: "majlis", amount: 25000, note: "" },
+      { month: 1, day: 5, title: "5th Muharram majlis", titleUr: "پنجم محرم مجلس", kind: "majlis", amount: 25000, note: "" },
+      { month: 1, day: 6, title: "6th Muharram majlis", titleUr: "ششم محرم مجلس", kind: "majlis", amount: 25000, note: "" },
+      { month: 1, day: 7, title: "7th Muharram majlis", titleUr: "ہفتم محرم مجلس", kind: "majlis", amount: 30000, note: "" },
+      { month: 1, day: 8, title: "8th Muharram majlis", titleUr: "ہشتم محرم مجلس", kind: "majlis", amount: 30000, note: "" },
+      { month: 1, day: 9, title: "9th Muharram (Shab-e-Ashur)", titleUr: "نہم محرم شب عاشور", kind: "majlis", amount: 75000, note: "Night of Ashura." },
+      { month: 1, day: 10, title: "10th Muharram (Ashura)", titleUr: "عاشورہ", kind: "majlis", amount: 100000, note: "Ashura processions and majlis." },
+      { month: 2, day: 20, title: "Arbaeen (20th Safar)", titleUr: "اربعین", kind: "majlis", amount: 50000, note: "Chehlum of Imam Hussain (a.s.)." },
+      { month: 2, day: 28, title: "28th Safar", titleUr: "۲۸ صفر", kind: "majlis", amount: 40000, note: "Wafat of Prophet Muhammad (s) and Imam Hasan (a.s.)." },
+      { month: 3, day: 8, title: "8th Rabi al-Awwal", titleUr: "۸ ربیع الاول", kind: "majlis", amount: 35000, note: "Close of the azadari season." },
+      { month: 3, day: 12, title: "Eid Milad-un-Nabi", titleUr: "عید میلاد النبی", kind: "milad", amount: 40000, note: "Milad gathering." },
+      { month: 3, day: 17, title: "Wiladat Imam Jafar al-Sadiq (a.s.)", titleUr: "ولادت امام جعفر الصادق", kind: "milad", amount: 35000, note: "Namesake of the trust." },
+      { month: 5, day: 13, title: "Ayyam-e-Fatimiyya majlis", titleUr: "ایام فاطمیہ مجلس", kind: "majlis", amount: 30000, note: "First Fatimiyya." },
+      { month: 5, day: 14, title: "Ayyam-e-Fatimiyya majlis", titleUr: "ایام فاطمیہ مجلس", kind: "majlis", amount: 30000, note: "" },
+      { month: 5, day: 15, title: "Ayyam-e-Fatimiyya majlis", titleUr: "ایام فاطمیہ مجلس", kind: "majlis", amount: 35000, note: "" },
+      { month: 6, day: 3, title: "Ayyam-e-Fatimiyya (second)", titleUr: "ایام فاطمیہ دوم", kind: "majlis", amount: 30000, note: "Second Fatimiyya." },
+      { month: 6, day: 13, title: "Wiladat Bibi Fatima (s.a.)", titleUr: "ولادت بی بی فاطمہ", kind: "milad", amount: 25000, note: "" },
+      { month: 7, day: 13, title: "Wiladat Imam Ali (a.s.)", titleUr: "ولادت امام علی", kind: "milad", amount: 30000, note: "" },
+      { month: 9, day: 21, title: "21st Ramadan", titleUr: "۲۱ رمضان", kind: "majlis", amount: 40000, note: "Shahadat of Imam Ali (a.s.)." },
+    ];
+    const rows = [];
+    for (const t of templates) {
+      const hits = upcomingHijriDates(t.month, t.day, 500);
+      for (const hit of hits.slice(0, 1)) {
+        rows.push({
+          title: t.title,
+          titleUr: t.titleUr,
+          kind: t.kind,
+          hijriMonth: t.month,
+          hijriDay: t.day,
+          hijriYear: hit.hijriYear,
+          gregorianDate: ymd(hit.gregorian),
+          suggestedAmount: String(t.amount),
+          location: "Masjid o Imam Bargah Al-Sadiq Trust",
+          description: `${t.note} ${t.day} ${hijriMonthName(t.month)} ${hit.hijriYear}.`.trim(),
+          isPublic: true,
+          createdById: admin.id,
+        });
+      }
+    }
+    if (rows.length) {
+      await db.insert(gatherings).values(rows);
+      console.log(`  gatherings: ${rows.length}`);
     }
   }
 

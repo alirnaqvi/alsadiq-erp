@@ -9,7 +9,7 @@ import type { HeadOption } from "@/lib/queries";
 function Save() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="lg" className="w-full" disabled={pending}>
+    <Button type="submit" variant="gold" size="lg" className="w-full" disabled={pending}>
       {pending ? "Sending…" : "Submit payment"}
     </Button>
   );
@@ -51,7 +51,7 @@ export default function DonorPayForm({
   }
 
   if (state.ok) {
-    return <p className="rounded-md border border-sabz-700/25 bg-sabz-100 px-3 py-3 text-sm text-sabz-700">{state.ok}</p>;
+    return <p className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">{state.ok}</p>;
   }
 
   return (
@@ -82,13 +82,7 @@ export default function DonorPayForm({
           <option value="cheque">Cheque</option>
         </Select>
       </Field>
-      <Field label="Bank / reference">
-        <Input name="bankName" placeholder="Bank name" />
-      </Field>
-      <Field label="Slip / transaction number">
-        <Input name="slipRef" />
-      </Field>
-      <Field label="Attach proof" hint="Photo of the transfer slip or a PDF.">
+      <Field label="Attach proof" hint="Photo of the transfer slip or a PDF. Optional for cash.">
         <input type="file" accept="image/*,application/pdf" onChange={onFile} className="text-sm" />
         {slipUrl && <p className="mt-1 text-xs text-sabz-700">Proof attached.</p>}
         {slipError && <p className="mt-1 text-xs text-alert-700">{slipError}</p>}

@@ -18,6 +18,8 @@ export type ReceiptData = {
   status?: string;
   remarks?: string | null;
   additionalNames?: string | null;
+  /** When a collection is split across heads, list each line on the strip. */
+  headLines?: { name: string; parentName?: string | null; amount: number }[];
 };
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
@@ -59,7 +61,7 @@ export default function ReceiptStrip({ data }: { data: ReceiptData }) {
           <img
             src={data.org.logo}
             alt=""
-            className="mx-auto mb-2 h-14 w-14 object-contain print:h-12 print:w-12"
+            className="mx-auto mb-2 h-14 w-14 rounded-full object-contain print:h-12 print:w-12"
           />
         )}
         <h3 className="text-[15px] font-bold uppercase tracking-wide">{data.org.name}</h3>
@@ -87,15 +89,31 @@ export default function ReceiptStrip({ data }: { data: ReceiptData }) {
       </div>
 
       <div className="border-t border-dashed border-ink-300 pt-2 space-y-0.5">
-        <Row
-          label="Head"
-          value={
-            <>
-              {data.parentName ? `${data.parentName} / ` : ""}
-              {data.headName}
-            </>
-          }
-        />
+        {data.headLines && data.headLines.length > 1 ? (
+          data.headLines.map((line, i) => (
+            <Row
+              key={`${line.name}-${i}`}
+              label={i === 0 ? "Heads" : ""}
+              value={
+                <>
+                  {line.parentName ? `${line.parentName} / ` : ""}
+                  {line.name}
+                  {line.amount > 0 ? ` — Rs ${money(line.amount)}` : ""}
+                </>
+              }
+            />
+          ))
+        ) : (
+          <Row
+            label="Head"
+            value={
+              <>
+                {data.parentName ? `${data.parentName} / ` : ""}
+                {data.headName}
+              </>
+            }
+          />
+        )}
         <Row label="Method" value={PAYMENT_LABELS[data.paymentMethod] ?? data.paymentMethod} />
         {data.chequeNo && <Row label="Cheque" value={data.chequeNo} />}
         {data.slipRef && <Row label="Ref" value={data.slipRef} />}

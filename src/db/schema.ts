@@ -100,6 +100,11 @@ export const donors = pgTable(
     email: varchar("email", { length: 160 }),
     address: text("address"),
     city: varchar("city", { length: 80 }),
+    profession: varchar("profession", { length: 120 }),
+    bloodGroup: varchar("blood_group", { length: 8 }),
+    dateOfBirth: date("date_of_birth"),
+    // Giving recorded in the previous register, before this system existed
+    priorTotal: numeric("prior_total", { precision: 12, scale: 2 }).notNull().default("0"),
     // set when several people genuinely share one number (family account)
     sharesMobileWith: varchar("shares_mobile_with", { length: 24 }),
     notes: text("notes"),
@@ -190,6 +195,28 @@ export const donations = pgTable(
     index("donations_collector_idx").on(t.collectedById),
   ],
 );
+
+/* One receipt can be split across several collection heads. */
+export const donationLines = pgTable(
+  "donation_lines",
+  {
+    id: serial("id").primaryKey(),
+    donationId: integer("donation_id")
+      .notNull()
+      .references(() => donations.id),
+    headId: integer("head_id")
+      .notNull()
+      .references(() => heads.id),
+    amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+    isMembership: boolean("is_membership").notNull().default(false),
+  },
+  (t) => [index("donation_lines_donation_idx").on(t.donationId), index("donation_lines_head_idx").on(t.headId)],
+);
+
+export const donationLinesRelations = relations(donationLines, ({ one }) => ({
+  donation: one(donations, { fields: [donationLines.donationId], references: [donations.id] }),
+  head: one(heads, { fields: [donationLines.headId], references: [heads.id] }),
+}));
 
 /* ----------------------------------------------------------- membership */
 
@@ -307,6 +334,9 @@ export const assets = pgTable(
     category: varchar("category", { length: 80 }),
     location: varchar("location", { length: 120 }),
     serialNo: varchar("serial_no", { length: 80 }),
+    department: varchar("department", { length: 120 }),
+    inchargeName: varchar("incharge_name", { length: 120 }),
+    inchargeUserId: integer("incharge_user_id").references(() => users.id),
     purchaseDate: date("purchase_date"),
     purchaseValue: numeric("purchase_value", { precision: 12, scale: 2 }),
     status: varchar("status", { length: 24 }).notNull().default("in_use"), // in_use | stored | under_repair | disposed
@@ -366,3 +396,51 @@ export const whatsappCampaigns = pgTable("whatsapp_campaigns", {
   createdById: integer("created_by_id").references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/* ------------------------------------------ gatherings / sponsorships */
+
+export const gatherings = pgTable(
+  "gatherings",
+  {
+    id: serial("id").primaryKey(),
+    title: varchar("title", { length: 160 }).notNull(),
+    titleUr: varchar("title_ur", { length: 160 }),
+    kind: varchar("kind", { length: 40 }).notNull().default("majlis"),
+    hijriMonth: integer("hijri_month"),
+    hijriDay: integer("hijri_day"),
+    hijriYear: integer("hijri_year"),
+    gregorianDate: date("gregorian_date").notNull(),
+    suggestedAmount: numeric("suggested_amount", { precision: 12, scale: 2 }),
+    location: varchar("location", { length: 160 }),
+    description: text("description"),
+    isPublic: boolean("is_public").notNull().default(true),
+    createdById: integer("created_by_id").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("gatherings_date_idx").on(t.gregorianDate)],
+);
+
+export const sponsorships = pgTable(
+  "sponsorships",
+  {
+    id: serial("id").primaryKey(),
+    gatheringId: integer("gathering_id")
+      .notNull()
+      .references(() => gatherings.id),
+    donorId: integer("donor_id")
+      .notNull()
+      .references(() => donors.id),
+    offeredAmount: numeric("offered_amount", { precision: 12, scale: 2 }).notNull(),
+    message: text("message"),
+    status: varchar("status", { length: 16 }).notNull().default("pending"), // pending | approved | rejected
+    reviewedById: integer("reviewed_by_id").references(() => users.id),
+    reviewNote: text("review_note"),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("sponsorships_gathering_idx").on(t.gatheringId),
+    index("sponsorships_donor_idx").on(t.donorId),
+    index("sponsorships_status_idx").on(t.status),
+  ],
+);

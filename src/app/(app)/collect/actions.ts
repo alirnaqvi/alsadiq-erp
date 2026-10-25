@@ -2,10 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { and, desc, eq, ne, or, ilike, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, or, ilike, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { donors, donations, heads } from "@/db/schema";
+import { donors, donations, donationLines, heads, pledges } from "@/db/schema";
 import { assertPermission } from "@/lib/auth";
 import { logAction } from "@/lib/audit";
 import { nextDonorCode, nextReceiptNo, newShareToken } from "@/lib/sequence";
@@ -102,8 +102,11 @@ const schema = z.object({
   address: z.string().optional(),
   city: z.string().optional(),
   legacyCode: z.string().optional(),
-  headId: z.string().min(1, "Choose a collection head."),
-  amount: z.string().min(1, "Enter an amount."),
+  kind_membership: z.string().optional(),
+  kind_others: z.string().optional(),
+  isMonthlyMember: z.string().optional(),
+  headId: z.string().optional(),
+  amount: z.string().optional(),
   paymentMethod: z.enum(["cash", "bank_transfer", "cheque", "online"]),
   chequeNo: z.string().optional(),
   bankName: z.string().optional(),
@@ -124,16 +127,58 @@ export async function recordDonation(
 
   const parsed = schema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Check the form and try again." };
+    const first = parsed.error.issues[0];
+    if (first?.path[0] === "kind_membership" || first?.path[0] === "kind_others") {
+      return { fieldErrors: { kind: "Choose monthly membership or others." } };
+    }
+    return { error: first?.message ?? "Check the form and try again." };
   }
   const v = parsed.data;
 
-  const amount = Number(v.amount);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return { fieldErrors: { amount: "Enter an amount greater than zero." } };
+  type Line = { headId: number; amount: number; isMembership: boolean };
+  const lines: Line[] = [];
+  const wantMembership = v.kind_membership === "on";
+  const wantOthers = v.kind_others === "on";
+  const monthlyMember = v.isMonthlyMember === "on" || wantMembership;
+
+  if (!wantMembership && !wantOthers) {
+    return { fieldErrors: { kind: "Choose monthly membership or others." } };
   }
-  if (amount > 100_000_000) {
-    return { fieldErrors: { amount: "That amount looks wrong. Check it before saving." } };
+
+  if (wantMembership) {
+    const amount = Number(v.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return { fieldErrors: { amount: "Enter an amount greater than zero." } };
+    }
+    if (amount > 100_000_000) {
+      return { fieldErrors: { amount: "That amount looks wrong. Check it before saving." } };
+    }
+    const [memHead] = await db.select().from(heads).where(eq(heads.code, "MEM-MON")).limit(1);
+    if (!memHead) {
+      return { fieldErrors: { kind: "Monthly contribution is not set up as a collection head." } };
+    }
+    lines.push({ headId: memHead.id, amount, isMembership: true });
+  }
+
+  if (wantOthers) {
+    const headIds = [...new Set(formData.getAll("headId").map(String).filter(Boolean))];
+    if (headIds.length === 0) {
+      return { fieldErrors: { headId: "Select at least one collection head." } };
+    }
+    for (const rawId of headIds) {
+      const headId = Number(rawId);
+      const amount = Number(formData.get(`amount_${rawId}`));
+      if (!Number.isFinite(headId) || headId <= 0) {
+        return { fieldErrors: { headId: "Choose a valid collection head." } };
+      }
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return { fieldErrors: { amount: "Enter an amount greater than zero for each selected head." } };
+      }
+      if (amount > 100_000_000) {
+        return { fieldErrors: { amount: "That amount looks wrong. Check it before saving." } };
+      }
+      lines.push({ headId, amount, isMembership: false });
+    }
   }
 
   const mobile = normaliseMobile(v.mobile);
@@ -180,15 +225,29 @@ export async function recordDonation(
     }
   }
 
-  const headId = Number(v.headId);
-  const [head] = await db.select().from(heads).where(eq(heads.id, headId)).limit(1);
-  if (!head) return { fieldErrors: { headId: "That collection head no longer exists." } };
+  const headRows = await db
+    .select()
+    .from(heads)
+    .where(and(eq(heads.isActive, true), inArray(heads.id, lines.map((l) => l.headId))));
+
+  const headById = new Map(headRows.map((h) => [h.id, h]));
+  for (const line of lines) {
+    if (!headById.has(line.headId)) {
+      return { fieldErrors: { headId: "That collection head no longer exists." } };
+    }
+  }
 
   if (v.paymentMethod === "cheque" && !v.chequeNo?.trim()) {
     return { fieldErrors: { chequeNo: "Enter the cheque number." } };
   }
 
   const status = v.paymentMethod === "cheque" ? "pending" : "completed";
+  const [donor] = await db.select().from(donors).where(eq(donors.id, donorId)).limit(1);
+  if (!donor) return { error: "That donor could not be found. Search again and retry." };
+  const month = new Date().toISOString().slice(0, 7);
+  const total = lines.reduce((s, l) => s + l.amount, 0);
+  const primary = lines[0];
+  const headNames = lines.map((l) => headById.get(l.headId)!.name).join(", ");
   const receiptNo = await nextReceiptNo();
 
   const [saved] = await db
@@ -196,8 +255,8 @@ export async function recordDonation(
     .values({
       receiptNo,
       donorId,
-      headId,
-      amount: amount.toFixed(2),
+      headId: primary.headId,
+      amount: total.toFixed(2),
       paymentMethod: v.paymentMethod,
       status,
       chequeNo: v.chequeNo?.trim() || null,
@@ -208,22 +267,44 @@ export async function recordDonation(
       additionalNames: v.additionalNames?.trim() || null,
       source: "staff",
       shareToken: newShareToken(),
-      isMembership: v.isMembership === "on",
-      membershipMonth:
-        v.isMembership === "on" ? new Date().toISOString().slice(0, 7) : null,
+      isMembership: lines.some((l) => l.isMembership),
+      membershipMonth: lines.some((l) => l.isMembership) ? month : null,
       collectedById: user.id,
       receivedAt: new Date(),
     })
     .returning();
 
-  const [donor] = await db.select().from(donors).where(eq(donors.id, donorId)).limit(1);
+  await db.insert(donationLines).values(
+    lines.map((line) => ({
+      donationId: saved.id,
+      headId: line.headId,
+      amount: line.amount.toFixed(2),
+      isMembership: line.isMembership,
+    })),
+  );
+
+  if (monthlyMember) {
+    const membershipAmount = lines.find((l) => l.isMembership)?.amount;
+    const [existingPledge] = await db.select().from(pledges).where(eq(pledges.donorId, donorId)).limit(1);
+    if (!existingPledge && membershipAmount) {
+      await db.insert(pledges).values({
+        donorId,
+        monthlyAmount: membershipAmount.toFixed(2),
+        headId: primary.headId,
+        startedOn: new Date().toISOString().slice(0, 10),
+        createdById: user.id,
+      });
+    } else if (existingPledge && !existingPledge.isActive) {
+      await db.update(pledges).set({ isActive: true }).where(eq(pledges.id, existingPledge.id));
+    }
+  }
 
   await logAction({
     actor: user,
     action: "create",
     entityType: "donation",
     entityId: saved.id,
-    summary: `Receipt ${receiptNo} — Rs ${money(amount)} from ${donor.fullName} for ${head.name}${
+    summary: `Receipt ${receiptNo} — Rs ${money(total)} from ${donor.fullName} for ${headNames}${
       createdDonor ? " (new donor)" : ""
     }`,
     after: saved,
