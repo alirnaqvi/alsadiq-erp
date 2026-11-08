@@ -129,7 +129,7 @@ const HEAD_DEFS: {
   {
     code: "AZADARI_SHARE",
     name: "Azadari Share",
-    nameUr: "عزاداری شیئر",
+    nameUr: "عزاداری کا حصہ",
     children: [
       { code: "AZS-MAJ", name: "Majalis" },
       { code: "AZS-GEN", name: "General Azadari Share" },
@@ -295,7 +295,7 @@ async function main() {
         nameUr: h.nameUr,
         sortOrder: (order += 10),
       })
-      .onConflictDoUpdate({ target: heads.code, set: { name: h.name } })
+      .onConflictDoUpdate({ target: heads.code, set: { name: h.name, nameUr: h.nameUr } })
       .returning();
 
     for (const c of h.children ?? []) {
