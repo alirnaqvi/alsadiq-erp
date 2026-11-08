@@ -13,8 +13,14 @@ const KEYS = [
   "org_tagline",
   "org_address",
   "org_phone",
+  "org_email",
   "receipt_footer",
   "org_logo",
+  "bank_name",
+  "bank_account_title",
+  "bank_account_number",
+  "bank_iban",
+  "whatsapp_number",
 ] as const;
 
 // Logo is stored as a base64 data URL directly in the settings table (no

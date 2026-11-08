@@ -5,6 +5,7 @@ import { requireDonor } from "@/lib/donor-auth";
 import { hijri, longDate, money, ymd } from "@/lib/format";
 import { Card } from "@/components/ui";
 import EventCalendar from "@/components/EventCalendar";
+import { WeeklyPrograms } from "@/components/WeeklyPrograms";
 import SponsorForm from "./SponsorForm";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +35,10 @@ export default async function DonorCalendarPage() {
         Majalis, milad and niaz at Al Sadiq Trust. If you wish to sponsor a date, send a request with
         the amount you can offer. The trust will approve or decline and message you on WhatsApp.
       </p>
+
+      <div className="mt-6">
+        <WeeklyPrograms />
+      </div>
 
       <div className="mt-6">
         <EventCalendar

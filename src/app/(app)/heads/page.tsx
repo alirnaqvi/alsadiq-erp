@@ -40,9 +40,9 @@ export default async function HeadsPage() {
       />
 
       <div className="mb-6 rounded-md border border-brass-600/30 bg-brass-100/60 px-4 py-3 text-sm text-ink-800">
-        These heads are placeholders put in to get the system running. Replace them with the
-        trust&apos;s own list — a head that already has receipts against it can be retired but not
-        removed, so old records stay readable.
+        These heads match the donate list on alsadiqtrust.com, plus monthly membership for the
+        counter. A head that already has receipts can be retired but not removed, so old records stay
+        readable.
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">

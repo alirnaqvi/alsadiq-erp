@@ -25,8 +25,14 @@ export default function SettingsForm({ settings }: { settings: Record<string, st
     tagline: settings.org_tagline ?? "",
     address: settings.org_address ?? "",
     phone: settings.org_phone ?? "",
+    email: settings.org_email ?? "",
     footer: settings.receipt_footer ?? "",
     logo: settings.org_logo ?? "",
+    bankName: settings.bank_name ?? "",
+    accountTitle: settings.bank_account_title ?? "",
+    accountNumber: settings.bank_account_number ?? "",
+    iban: settings.bank_iban ?? "",
+    whatsapp: settings.whatsapp_number ?? "",
   });
   const [logoError, setLogoError] = useState<string | null>(null);
 
@@ -107,6 +113,21 @@ export default function SettingsForm({ settings }: { settings: Record<string, st
                   onChange={(e) => setOrg({ ...org, phone: e.target.value })}
                 />
               </Field>
+              <Field label="Email">
+                <Input
+                  name="org_email"
+                  value={org.email}
+                  onChange={(e) => setOrg({ ...org, email: e.target.value })}
+                />
+              </Field>
+              <Field label="WhatsApp (digits with country code)">
+                <Input
+                  name="whatsapp_number"
+                  value={org.whatsapp}
+                  onChange={(e) => setOrg({ ...org, whatsapp: e.target.value })}
+                  placeholder="923212415331"
+                />
+              </Field>
               <Field label="Footer message" hint="Printed at the bottom of every receipt.">
                 <Textarea
                   name="receipt_footer"
@@ -119,6 +140,38 @@ export default function SettingsForm({ settings }: { settings: Record<string, st
 
             {state.error && <p className="mt-3 text-sm text-alert-700">{state.error}</p>}
             {state.ok && <p className="mt-3 text-sm text-sabz-700">{state.ok}</p>}
+
+            <h2 className="mb-4 mt-8 text-sm font-semibold text-ink-900">Bank transfer (from the public website)</h2>
+            <div className="space-y-4">
+              <Field label="Bank">
+                <Input
+                  name="bank_name"
+                  value={org.bankName}
+                  onChange={(e) => setOrg({ ...org, bankName: e.target.value })}
+                />
+              </Field>
+              <Field label="Account title">
+                <Input
+                  name="bank_account_title"
+                  value={org.accountTitle}
+                  onChange={(e) => setOrg({ ...org, accountTitle: e.target.value })}
+                />
+              </Field>
+              <Field label="Account number">
+                <Input
+                  name="bank_account_number"
+                  value={org.accountNumber}
+                  onChange={(e) => setOrg({ ...org, accountNumber: e.target.value })}
+                />
+              </Field>
+              <Field label="IBAN">
+                <Input
+                  name="bank_iban"
+                  value={org.iban}
+                  onChange={(e) => setOrg({ ...org, iban: e.target.value })}
+                />
+              </Field>
+            </div>
 
             <div className="mt-4">
               <Save label="Save settings" />

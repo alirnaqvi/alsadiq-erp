@@ -7,6 +7,7 @@ import { tx } from "@/lib/i18n";
 import { getLocale } from "@/lib/locale";
 import { Badge, Button, Card, Field, Input, LinkButton, PageHeader, Select, Textarea } from "@/components/ui";
 import EventCalendar from "@/components/EventCalendar";
+import { WeeklyPrograms } from "@/components/WeeklyPrograms";
 import { saveGathering, reviewSponsorship } from "./actions";
 import WhatsAppStatusLink from "./WhatsAppStatusLink";
 import GatheringActions from "./GatheringActions";
@@ -56,6 +57,10 @@ export default async function CalendarPage({
         title={t("pages.calendar.title")}
         subtitle={t("pages.calendar.subtitle")}
       />
+
+      <div className="mb-6">
+        <WeeklyPrograms />
+      </div>
 
       <div className="mb-6">
         <EventCalendar

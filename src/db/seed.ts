@@ -1,10 +1,11 @@
 
 import bcrypt from "bcryptjs";
-import { sql } from "drizzle-orm";
+import { eq, inArray, notInArray, sql } from "drizzle-orm";
 import { db } from "./index";
-import { roles, users, heads, donors, donations, pledges, settings, counters, gatherings } from "./schema";
+import { roles, users, heads, donors, donations, pledges, settings, counters, gatherings, sponsorships } from "./schema";
 import { ALL_PERMISSIONS } from "../lib/permissions";
 import { upcomingHijriDates, hijriMonthName, ymd } from "../lib/format";
+import { DONATE_HEADS, ISLAMIC_CALENDAR, TRUST, TRUST_SETTINGS } from "../lib/trust-facts";
 
 const withDemo = process.argv.includes("--demo");
 
@@ -82,98 +83,7 @@ const ROLE_DEFS = [
   },
 ];
 
-/* -------------------------------------------------- placeholder heads
-   These are stand-ins. Replace them from Setup → Collection heads once the
-   trust hands over its real chart of heads.                              */
-
-const HEAD_DEFS: {
-  code: string;
-  name: string;
-  nameUr?: string;
-  isEvent?: boolean;
-  children?: { code: string; name: string; nameUr?: string; isEvent?: boolean }[];
-}[] = [
-  {
-    code: "MAJLIS",
-    name: "Majlis",
-    nameUr: "مجلس",
-    children: [
-      { code: "MAJ-MUH-01", name: "1st Muharram", isEvent: true },
-      { code: "MAJ-MUH-09", name: "9th Muharram (Shab-e-Ashur)", isEvent: true },
-      { code: "MAJ-MUH-10", name: "10th Muharram (Ashura)", isEvent: true },
-      { code: "MAJ-SAF-28", name: "28th Safar", isEvent: true },
-      { code: "MAJ-ARB", name: "Arbaeen (20th Safar)", isEvent: true },
-      { code: "MAJ-RAM-21", name: "21st Ramadan", isEvent: true },
-    ],
-  },
-  {
-    code: "LANGAR",
-    name: "Langar & Niaz",
-    nameUr: "لنگر و نیاز",
-    children: [
-      { code: "LNG-DEG", name: "Deg / Niaz" },
-      { code: "LNG-SAB", name: "Sabeel" },
-      { code: "LNG-TAB", name: "Tabarruk distribution" },
-    ],
-  },
-  {
-    code: "AZADARI",
-    name: "Azadari",
-    nameUr: "عزاداری",
-    children: [
-      { code: "AZD-JUL", name: "Juloos arrangements" },
-      { code: "AZD-ALM", name: "Alam & Taboot" },
-      { code: "AZD-SND", name: "Sound & lighting" },
-    ],
-  },
-  {
-    code: "AZADARI_SHARE",
-    name: "Azadari Share",
-    nameUr: "عزاداری کا حصہ",
-    children: [
-      { code: "AZS-MAJ", name: "Majalis" },
-      { code: "AZS-GEN", name: "General Azadari Share" },
-      { code: "AZS-NYZ", name: "Niyaz & tabarruk" },
-    ],
-  },
-  {
-    code: "ZAKAT",
-    name: "Zakat & Sadqa",
-    nameUr: "زکوٰۃ و صدقہ",
-    children: [
-      { code: "ZAK-GEN", name: "Zakat" },
-      { code: "ZAK-SAD", name: "Sadqa" },
-      { code: "ZAK-FIT", name: "Fitrana" },
-    ],
-  },
-  {
-    code: "WELFARE",
-    name: "Welfare",
-    nameUr: "فلاح و بہبود",
-    children: [
-      { code: "WEL-MED", name: "Medical assistance" },
-      { code: "WEL-EDU", name: "Education support" },
-      { code: "WEL-WID", name: "Widow & orphan fund" },
-      { code: "WEL-RAT", name: "Ration distribution" },
-    ],
-  },
-  {
-    code: "BUILD",
-    name: "Construction",
-    nameUr: "تعمیرات",
-    children: [
-      { code: "BLD-IMB", name: "Imambargah building fund" },
-      { code: "BLD-MNT", name: "Repair & maintenance" },
-    ],
-  },
-  {
-    code: "MEMBER",
-    name: "Monthly Membership",
-    nameUr: "ماہانہ رکنیت",
-    children: [{ code: "MEM-MON", name: "Monthly contribution" }],
-  },
-  { code: "GENERAL", name: "General Donation", nameUr: "عام عطیہ" },
-];
+const HEAD_DEFS = DONATE_HEADS;
 
 /* ------------------------------------------------------------ demo data */
 
@@ -187,7 +97,7 @@ const DEMO_NAMES = [
   "Nadeem Abbas", "Sajjad Haider", "Farzana Kazmi", "Irfan Ali Zaidi",
 ];
 
-const CITIES = ["Karachi", "Lahore", "Rawalpindi", "Multan", "Hyderabad"];
+const CITIES = ["Islamabad", "Rawalpindi", "Lahore", "Karachi", "Multan"];
 
 async function main() {
   console.log("Seeding Al Sadiq Trust database...");
@@ -295,7 +205,10 @@ async function main() {
         nameUr: h.nameUr,
         sortOrder: (order += 10),
       })
-      .onConflictDoUpdate({ target: heads.code, set: { name: h.name, nameUr: h.nameUr } })
+      .onConflictDoUpdate({
+        target: heads.code,
+        set: { name: h.name, nameUr: h.nameUr, parentId: null, isActive: true },
+      })
       .returning();
 
     for (const c of h.children ?? []) {
@@ -306,26 +219,30 @@ async function main() {
           name: c.name,
           nameUr: c.nameUr,
           parentId: parent.id,
-          isEvent: c.isEvent ?? false,
+          isEvent: false,
           sortOrder: (order += 1),
         })
-        .onConflictDoUpdate({ target: heads.code, set: { name: c.name, parentId: parent.id } });
+        .onConflictDoUpdate({
+          target: heads.code,
+          set: { name: c.name, nameUr: c.nameUr, parentId: parent.id, isActive: true },
+        });
     }
   }
-  const headRows = await db.select().from(heads);
-  console.log(`  collection heads: ${headRows.length}`);
+  const keepCodes = [
+    ...HEAD_DEFS.map((h) => h.code),
+    ...HEAD_DEFS.flatMap((h) => h.children?.map((c) => c.code) ?? []),
+  ];
+  await db.update(heads).set({ isActive: false }).where(notInArray(heads.code, keepCodes));
 
-  /* settings */
-  const defaults: Record<string, string> = {
-    org_name: "Al Sadiq Trust",
-    org_tagline: "Registered Welfare Trust",
-    org_address: "Main Imambargah, Karachi",
-    org_phone: "021-1234567",
-    receipt_footer: "May Allah accept your contribution. Please keep this receipt.",
-    whatsapp_country_code: "92",
-  };
-  for (const [key, value] of Object.entries(defaults)) {
-    await db.insert(settings).values({ key, value }).onConflictDoNothing();
+  const headRows = await db.select().from(heads);
+  console.log(`  collection heads: ${headRows.filter((h) => h.isActive).length} active`);
+
+  /* settings — always match the public website */
+  for (const [key, value] of Object.entries(TRUST_SETTINGS)) {
+    await db
+      .insert(settings)
+      .values({ key, value })
+      .onConflictDoUpdate({ target: settings.key, set: { value } });
   }
 
   /* demo donors and donations */
@@ -334,7 +251,10 @@ async function main() {
     if (existing.length === 0) {
       const collectors = userRows.filter((u) => u.username === "manager" || u.username === "office");
       const team = collectors.length ? collectors : [admin];
-      const leafHeads = headRows.filter((h) => h.parentId !== null);
+      const parentIds = new Set(
+        headRows.filter((h) => h.isActive && h.parentId !== null).map((h) => h.parentId as number),
+      );
+      const leafHeads = headRows.filter((h) => h.isActive && !parentIds.has(h.id));
 
       let donorSeq = 0;
       const donorIds: number[] = [];
@@ -417,58 +337,63 @@ async function main() {
     }
   }
 
-  /* gatherings for the coming Hijri season */
-  const existingGatherings = await db.select({ id: gatherings.id }).from(gatherings).limit(1);
-  if (existingGatherings.length === 0) {
-    const templates: { month: number; day: number; title: string; titleUr: string; kind: string; amount: number; note: string }[] = [
-      { month: 1, day: 1, title: "1st Muharram majlis", titleUr: "یکم محرم مجلس", kind: "majlis", amount: 25000, note: "Opening of azadari." },
-      { month: 1, day: 2, title: "2nd Muharram majlis", titleUr: "دوم محرم مجلس", kind: "majlis", amount: 25000, note: "" },
-      { month: 1, day: 3, title: "3rd Muharram majlis", titleUr: "سوم محرم مجلس", kind: "majlis", amount: 25000, note: "" },
-      { month: 1, day: 4, title: "4th Muharram majlis", titleUr: "چہارم محرم مجلس", kind: "majlis", amount: 25000, note: "" },
-      { month: 1, day: 5, title: "5th Muharram majlis", titleUr: "پنجم محرم مجلس", kind: "majlis", amount: 25000, note: "" },
-      { month: 1, day: 6, title: "6th Muharram majlis", titleUr: "ششم محرم مجلس", kind: "majlis", amount: 25000, note: "" },
-      { month: 1, day: 7, title: "7th Muharram majlis", titleUr: "ہفتم محرم مجلس", kind: "majlis", amount: 30000, note: "" },
-      { month: 1, day: 8, title: "8th Muharram majlis", titleUr: "ہشتم محرم مجلس", kind: "majlis", amount: 30000, note: "" },
-      { month: 1, day: 9, title: "9th Muharram (Shab-e-Ashur)", titleUr: "نہم محرم شب عاشور", kind: "majlis", amount: 75000, note: "Night of Ashura." },
-      { month: 1, day: 10, title: "10th Muharram (Ashura)", titleUr: "عاشورہ", kind: "majlis", amount: 100000, note: "Ashura processions and majlis." },
-      { month: 2, day: 20, title: "Arbaeen (20th Safar)", titleUr: "اربعین", kind: "majlis", amount: 50000, note: "Chehlum of Imam Hussain (a.s.)." },
-      { month: 2, day: 28, title: "28th Safar", titleUr: "۲۸ صفر", kind: "majlis", amount: 40000, note: "Wafat of Prophet Muhammad (s) and Imam Hasan (a.s.)." },
-      { month: 3, day: 8, title: "8th Rabi al-Awwal", titleUr: "۸ ربیع الاول", kind: "majlis", amount: 35000, note: "Close of the azadari season." },
-      { month: 3, day: 12, title: "Eid Milad-un-Nabi", titleUr: "عید میلاد النبی", kind: "milad", amount: 40000, note: "Milad gathering." },
-      { month: 3, day: 17, title: "Wiladat Imam Jafar al-Sadiq (a.s.)", titleUr: "ولادت امام جعفر الصادق", kind: "milad", amount: 35000, note: "Namesake of the trust." },
-      { month: 5, day: 13, title: "Ayyam-e-Fatimiyya majlis", titleUr: "ایام فاطمیہ مجلس", kind: "majlis", amount: 30000, note: "First Fatimiyya." },
-      { month: 5, day: 14, title: "Ayyam-e-Fatimiyya majlis", titleUr: "ایام فاطمیہ مجلس", kind: "majlis", amount: 30000, note: "" },
-      { month: 5, day: 15, title: "Ayyam-e-Fatimiyya majlis", titleUr: "ایام فاطمیہ مجلس", kind: "majlis", amount: 35000, note: "" },
-      { month: 6, day: 3, title: "Ayyam-e-Fatimiyya (second)", titleUr: "ایام فاطمیہ دوم", kind: "majlis", amount: 30000, note: "Second Fatimiyya." },
-      { month: 6, day: 13, title: "Wiladat Bibi Fatima (s.a.)", titleUr: "ولادت بی بی فاطمہ", kind: "milad", amount: 25000, note: "" },
-      { month: 7, day: 13, title: "Wiladat Imam Ali (a.s.)", titleUr: "ولادت امام علی", kind: "milad", amount: 30000, note: "" },
-      { month: 9, day: 21, title: "21st Ramadan", titleUr: "۲۱ رمضان", kind: "majlis", amount: 40000, note: "Shahadat of Imam Ali (a.s.)." },
-    ];
-    const rows = [];
-    for (const t of templates) {
-      const hits = upcomingHijriDates(t.month, t.day, 500);
-      for (const hit of hits.slice(0, 1)) {
-        rows.push({
-          title: t.title,
+  /* gatherings — match the published Islamic calendar on alsadiqtrust.com */
+  const sponsored = await db.select({ gatheringId: sponsorships.gatheringId }).from(sponsorships);
+  const sponsoredIds = new Set(sponsored.map((s) => s.gatheringId));
+  const existing = await db.select().from(gatherings);
+  const keepKey = (month: number | null, day: number | null, title: string) => `${month}-${day}-${title}`;
+  const wanted = new Set(ISLAMIC_CALENDAR.map((t) => keepKey(t.month, t.day, t.title)));
+
+  const staleIds = existing
+    .filter((g) => !wanted.has(keepKey(g.hijriMonth, g.hijriDay, g.title)) && !sponsoredIds.has(g.id))
+    .map((g) => g.id);
+  if (staleIds.length) {
+    await db.delete(gatherings).where(inArray(gatherings.id, staleIds));
+  }
+
+  const remaining = await db.select().from(gatherings);
+  let inserted = 0;
+  let updated = 0;
+  for (const t of ISLAMIC_CALENDAR) {
+    const hits = upcomingHijriDates(t.month, t.day, 500);
+    const hit = hits[0];
+    if (!hit) continue;
+    const description = [t.note, `${t.day} ${hijriMonthName(t.month)} ${hit.hijriYear}`].filter(Boolean).join(" · ");
+    const match = remaining.find(
+      (g) => g.hijriMonth === t.month && g.hijriDay === t.day && g.title === t.title,
+    );
+    if (match) {
+      await db
+        .update(gatherings)
+        .set({
           titleUr: t.titleUr,
           kind: t.kind,
-          hijriMonth: t.month,
-          hijriDay: t.day,
           hijriYear: hit.hijriYear,
           gregorianDate: ymd(hit.gregorian),
-          suggestedAmount: String(t.amount),
-          location: "Masjid o Imam Bargah Al-Sadiq Trust",
-          description: `${t.note} ${t.day} ${hijriMonthName(t.month)} ${hit.hijriYear}.`.trim(),
+          location: TRUST.location,
+          description,
           isPublic: true,
-          createdById: admin.id,
-        });
-      }
-    }
-    if (rows.length) {
-      await db.insert(gatherings).values(rows);
-      console.log(`  gatherings: ${rows.length}`);
+        })
+        .where(eq(gatherings.id, match.id));
+      updated += 1;
+    } else {
+      await db.insert(gatherings).values({
+        title: t.title,
+        titleUr: t.titleUr,
+        kind: t.kind,
+        hijriMonth: t.month,
+        hijriDay: t.day,
+        hijriYear: hit.hijriYear,
+        gregorianDate: ymd(hit.gregorian),
+        location: TRUST.location,
+        description,
+        isPublic: true,
+        createdById: admin.id,
+      });
+      inserted += 1;
     }
   }
+  console.log(`  gatherings: ${inserted} added, ${updated} updated, ${staleIds.length} retired`);
 
   await db.execute(sql`select 1`);
   console.log("Done.");

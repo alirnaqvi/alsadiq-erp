@@ -46,7 +46,9 @@ export type HeadOption = {
 export async function selectableHeads(): Promise<HeadOption[]> {
   const rows = await db.select().from(heads).orderBy(asc(heads.sortOrder), asc(heads.name));
   const byId = new Map(rows.map((r) => [r.id, r]));
-  const hasChildren = new Set(rows.map((r) => r.parentId).filter(Boolean) as number[]);
+  const hasChildren = new Set(
+    rows.filter((r) => r.isActive && r.parentId).map((r) => r.parentId as number),
+  );
 
   return rows
     .filter((r) => r.isActive && !hasChildren.has(r.id))
